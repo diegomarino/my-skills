@@ -495,6 +495,12 @@ class ResolveTests(unittest.TestCase):
         self.assertEqual(info["resolved_from"], "check-prerequisites")
         self.assertEqual(Path(info["feature_dir"]), self.ws.feature.resolve())
 
+    def test_tasks_without_a_task_line(self):
+        self.ws.tasks.write_text("# Tasks\n\n1. T001 Create the store\n")
+        with self.assertRaises(wp.UsageError) as caught:
+            wp.resolve_feature(self.ws.root, str(FEATURE), env={})
+        self.assertEqual(caught.exception.code, "TASKS_FORMAT")
+
     def test_missing_tasks(self):
         self.ws.tasks.unlink()
         with self.assertRaises(wp.UsageError) as caught:

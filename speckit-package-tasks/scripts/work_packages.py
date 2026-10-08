@@ -2,7 +2,7 @@
 """Resolve, validate, and promote a Spec Kit tasks-packages.md (Python 3.9+, stdlib only).
 
 Commands:
-  resolve  [--feature-dir DIR] [--json]       locate the feature directory and its tasks.md
+  resolve  [--feature-dir DIR] [--json]       locate the feature directory and a tasks.md with at least one task line
   validate [PATH] [--feature-dir DIR] [--repo-root DIR] [--json]
                                                deterministic audit of a tasks-packages file
   source-tasks [--feature-dir DIR]             print verbatim Source tasks entries by phase (drafting aid)
@@ -137,6 +137,12 @@ def _feature_result(root: Path, feature_dir: Path, resolved_from: str) -> dict:
     tasks = feature_dir / "tasks.md"
     if not tasks.is_file():
         raise UsageError("SOURCE_TASKS_NOT_FOUND", f"tasks.md not found in {feature_dir}")
+    try:
+        task_count = len(parse_source(tasks.read_text(encoding="utf-8"))["tasks"])
+    except UnicodeDecodeError:
+        raise UsageError("TASKS_FORMAT", f"tasks.md is not valid UTF-8: {tasks}") from None
+    if task_count == 0:
+        raise UsageError("TASKS_FORMAT", f"tasks.md has no task lines in {feature_dir}; expected '- [ ] T001 description'")
     output = feature_dir / OUTPUT_NAME
     return {
         "repo_root": str(root),
@@ -144,6 +150,7 @@ def _feature_result(root: Path, feature_dir: Path, resolved_from: str) -> dict:
         "tasks": str(tasks),
         "tasks_relative": os.path.relpath(tasks, root),
         "tasks_sha256": sha256_file(tasks),
+        "task_count": task_count,
         "feature": _feature_number(feature_dir),
         "output": str(output),
         "output_exists": output.exists(),

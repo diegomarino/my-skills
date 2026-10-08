@@ -16,7 +16,7 @@ Scripts need Python 3.9+ and nothing else. Run them from the repository root; `S
 python3 "$SKILL_DIR/scripts/work_packages.py" resolve --json [--feature-dir specs/NNN-name]
 ```
 
-Use the resolved paths exactly; if `resolve` fails, ask the user for `--feature-dir`. If `output_exists` is true and the user did not ask to `regenerate`, validate the existing file and report instead of drafting. When the request does not say the tasks are approved, confirm that with the user first. Read the repository's agent instructions (`AGENTS.md`, `CLAUDE.md`) and the whole `tasks.md`, including its Dependencies & Execution Order section, plus `spec.md`/`plan.md` where package acceptance needs them. Done when the paths are resolved and every source is read.
+Use the resolved paths exactly; if `resolve` fails, ask the user for `--feature-dir`. `TASKS_FORMAT` means `tasks.md` has no `- [ ] T001 description` line: stop and report that, and do not draft. If `output_exists` is true and the user did not ask to `regenerate`, validate the existing file and report instead of drafting. When the request does not say the tasks are approved, confirm that with the user first. Read the repository's agent instructions (`AGENTS.md`, `CLAUDE.md`) and the whole `tasks.md`, including its Dependencies & Execution Order section, plus `spec.md`/`plan.md` where package acceptance needs them. Done when `resolve` exits 0 and every source is read.
 
 ## 2. Draft the graph
 

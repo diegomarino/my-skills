@@ -20,7 +20,7 @@ Runtime: Python 3.9+ (standard library only). `git` is used, when present, to fi
 Ask the agent to package an approved feature ("split the tasks of specs/003-foo into work packages"), or invoke `/speckit-package-tasks` (append `regenerate` to replace an existing output). The scripts can also be run directly:
 
 ```bash
-python3 scripts/work_packages.py resolve --json                      # find feature dir + tasks.md
+python3 scripts/work_packages.py resolve --json                      # find feature dir and a tasks.md with at least one task line
 python3 scripts/work_packages.py validate specs/003-foo/tasks-packages.md [--json]
 python3 scripts/work_packages.py promote specs/003-foo/tasks-packages.draft.md [--regenerate]
 ```
