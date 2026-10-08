@@ -1,7 +1,6 @@
 ---
 name: speckit-package-tasks
 description: Splits an approved Spec Kit tasks.md into a tracker-neutral tasks-packages.md of independently assignable packages (planning only). Use when asked to package, group or batch Spec Kit tasks for assignment, to validate an existing tasks-packages.md, or to regenerate it after tasks.md changed.
-argument-hint: "Optional: regenerate"
 ---
 
 # Spec Kit work packages
