@@ -3,6 +3,7 @@ import importlib.util
 import io
 import json
 import os
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 import subprocess
 import sys
@@ -12,6 +13,11 @@ import unittest
 from unittest.mock import patch
 
 SCRIPT = Path(__file__).resolve().parents[1] / 'scripts' / 'prepare_runner.py'
+spec = importlib.util.spec_from_file_location('prepare_runner', SCRIPT)
+preparer = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(preparer)
+CURRENT_ACCOUNT = preparer.current_account
+RUNTIME_ACCOUNT = 'fixture-runner'
 
 
 class PreparationTests(unittest.TestCase):
@@ -20,6 +26,12 @@ class PreparationTests(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         self.base = Path(self.tmp.name).resolve()
         self.target = self.base / 'instance'
+        # Exercise preparation as a standard account even in root-based CI containers.
+        for mocked in (patch.object(preparer, 'current_account', return_value=RUNTIME_ACCOUNT),
+                       patch.object(preparer.os, 'geteuid', return_value=1001),
+                       patch.object(preparer.os, 'getuid', return_value=self.base.stat().st_uid)):
+            mocked.start()
+            self.addCleanup(mocked.stop)
 
     def archive(self, members=None, links=None):
         entries = members or {'config.sh': b'config', 'bin/Runner.Listener': b'runner'}
@@ -36,11 +48,18 @@ class PreparationTests(unittest.TestCase):
         return path
 
     def run_prepare(self, path, digest=None, extra=()):
-        import getpass
-        return subprocess.run([sys.executable, str(SCRIPT), 'prepare', '--archive', str(path),
+        args = [str(SCRIPT), 'prepare', '--archive', str(path),
             '--sha256', digest or hashlib.sha256(path.read_bytes()).hexdigest(),
             '--version', 'fixture-1', '--directory', str(self.target),
-            '--expected-user', getpass.getuser(), *extra], capture_output=True, text=True)
+            '--expected-user', RUNTIME_ACCOUNT, *extra]
+        stdout, stderr = io.StringIO(), io.StringIO()
+        code = 0
+        with patch.object(sys, 'argv', args), redirect_stdout(stdout), redirect_stderr(stderr):
+            try:
+                preparer.main()
+            except SystemExit as error:
+                code = error.code
+        return subprocess.CompletedProcess(args, code, stdout.getvalue(), stderr.getvalue())
 
     def test_prepares_verified_archive_and_records_receipt(self):
         path = self.archive()
@@ -81,12 +100,12 @@ class PreparationTests(unittest.TestCase):
 
     @unittest.skipUnless(hasattr(os, 'geteuid'), 'Unix identity guard')
     def test_account_identity_is_not_taken_from_environment(self):
-        from unittest.mock import patch
-        path = self.archive()
-        with patch.dict(os.environ, {'LOGNAME': 'counterfeit-account', 'USER': 'counterfeit-account'}):
-            result = self.run_prepare(path)
-        self.assertNotEqual(result.returncode, 0)
-        self.assertFalse(self.target.exists())
+        import pwd
+        from types import SimpleNamespace
+        with patch.dict(os.environ, {'LOGNAME': 'counterfeit-account', 'USER': 'counterfeit-account'}), \
+             patch.object(pwd, 'getpwuid', return_value=SimpleNamespace(pw_name=RUNTIME_ACCOUNT)) as lookup:
+            self.assertEqual(CURRENT_ACCOUNT(), RUNTIME_ACCOUNT)
+            lookup.assert_called_once_with(1001)
 
     def test_archive_links_and_duplicate_paths_are_refused(self):
         path = self.archive()
@@ -171,9 +190,7 @@ class PreparationTests(unittest.TestCase):
         self.assertFalse(self.target.exists())
 
     def test_identity_and_parent_ownership_guards(self):
-        spec = importlib.util.spec_from_file_location('prepare_guards', SCRIPT)
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
+        module = preparer
         path = self.archive()
         digest = hashlib.sha256(path.read_bytes()).hexdigest()
         with patch.object(module.os, 'geteuid', return_value=0):
@@ -188,16 +205,12 @@ class PreparationTests(unittest.TestCase):
         self.assertFalse(self.target.exists())
 
     def test_interrupted_extraction_is_retained_and_retry_refused(self):
-        spec = importlib.util.spec_from_file_location('prepare_runner', SCRIPT)
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        from unittest.mock import patch
-        import getpass
+        module = preparer
         path = self.archive()
         with patch.object(module.shutil, 'copyfileobj', side_effect=OSError('fixture interruption')):
             with self.assertRaises(OSError):
                 module.prepare(path, hashlib.sha256(path.read_bytes()).hexdigest(),
-                               self.target, 'fixture-1', getpass.getuser())
+                               self.target, 'fixture-1', RUNTIME_ACCOUNT)
         receipt = json.loads((self.target / '.preparation.json').read_text())
         self.assertEqual(receipt['status'], 'incomplete')
         report = module.inspect(self.target)

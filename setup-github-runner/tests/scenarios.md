@@ -74,3 +74,9 @@ User requested explicit-only activation. `agents/openai.yaml` sets `policy.allow
 ## Skill rename
 
 The skill is now named `setup-github-runner`; earlier evaluation and audit records refer to its historical name `github-runner`. Current commands and resource paths use `setup-github-runner`. Explicit-only invocation controls remain enabled.
+
+## Root-based test environments
+
+Preparation success/error-path fixtures mock a standard runtime account, effective UID and the parent ownership lookup. They exercise the CLI entry point in-process so these mocks apply even when the test process is root; the dedicated root-refusal and wrong-account/parent tests override those mocks and remain enforced. OS account lookup is tested independently from USER/LOGNAME. Inspection still runs through subprocesses.
+
+The review regression reproduced four failures and one error under simulated root before this test-only change. All 35 helper tests then passed on macOS and in an isolated Linux container running as UID 0, with no network and the skill mounted read-only. This is helper-test acceptance, not live runner/service deployment.
