@@ -25,6 +25,9 @@ Manual alternative: copy a skill folder into `~/.claude/skills/` (or `<repo>/.cl
 # Spec Kit: plan the work packages, then orchestrate them
 npx skills add diegomarino/my-skills@speckit-package-tasks
 npx skills add diegomarino/my-skills@speckit-orchestrate
+
+# Set up a self-hosted GitHub Actions runner
+npx skills add diegomarino/my-skills@setup-github-runner
 ```
 
 The two Spec Kit skills work independently. When both are installed, `speckit-orchestrate` also runs the package validator.
