@@ -1,0 +1,135 @@
+{
+  "audit": "docs",
+  "snapshot": {
+    "sha": "8d6598de262ea3bef0f947c30aa747d5c8ea7263",
+    "dirty": true,
+    "branch": "feat/github-runner",
+    "readme_diff_sha256": "21779ad43faa6e44eb4aec8d789646116f95a28dbd633aaeb0f32c778cb23502",
+    "baseline_manifest_verified": true,
+    "model": "claude-fable-5-1",
+    "date": "2026-10-08",
+    "report": "docs/audits/2026-10-08-8d6598d/docs-audit-2026-10-08.md"
+  },
+  "findings": [
+    {
+      "id": "D1",
+      "severity": "High",
+      "evidence": "CONFIRMED",
+      "issue": "The RUNNER_LABELS variable row says only 'JSON array of required verified platform labels, e.g. [\"Linux\",\"X64\"]'. select_runner.py:67-70 additionally requires at least one OS label (linux/macos/windows) AND one architecture label (x64/arm64/arm); any other array returns HOSTED_RUNNER with zero API requests and no message (tests/test_select_runner.py:63; fixture matrix: [\"Linux\"], [\"X64\"], [\"self-hosted\",\"Linux\"] all fall back).",
+      "scenario": "An operator sets RUNNER_LABELS to the labels they see on the runner page without an architecture entry; every run goes to hosted Ubuntu, the persistent host is never used, and nothing in the docs names RUNNER_LABELS as the cause.",
+      "file": "github-runner/references/ci.md",
+      "line_start": 15,
+      "line_end": 15,
+      "recommended_direction": "State in the RUNNER_LABELS row that the array must include at least one OS label (Linux/macOS/Windows) and one architecture label (X64/ARM64/ARM) matching the runner's default labels, that any other array returns HOSTED_RUNNER before any API request, and that extra labels are AND-matched.",
+      "acceptance_check": "grep -n 'RUNNER_LABELS' github-runner/references/ci.md: fails today (row mentions neither an architecture-label requirement nor the silent fallback); passes when the row states both. Behavioural anchor that must stay true: select(env with RUNNER_LABELS='[\"Linux\"]', fetch) returns the fallback with zero fetch calls (tests/test_select_runner.py:63)."
+    },
+    {
+      "id": "D2",
+      "severity": "Medium",
+      "evidence": "CONFIRMED",
+      "issue": "ci.md:31 lists the selector's fallback causes in one 131-word sentence; select_runner.py returns the fallback from at least 12 distinct conditions and prints only 'runner=<json>'; verification.md 'Diagnose one failing boundary' (35-39) covers registration/offline/queued/started but has no 'job ran hosted although the preferred runner was online' boundary.",
+      "scenario": "A returning maintainer sees hosted runs after a branch rename and must reverse-engineer ci.yml:41 and select_runner.py to learn that TRUSTED_RUNNER_REF must equal github.ref byte-for-byte; no symptom-first route exists in the docs.",
+      "file": "github-runner/references/ci.md",
+      "line_start": 31,
+      "line_end": 31,
+      "recommended_direction": "Add a 'Preferred route not taken' boundary to references/verification.md with a symptom -> condition -> non-secret check table (variable/secret names, event type, github.ref vs TRUSTED_RUNNER_REF, RUNNER_LABELS OS+arch, inventory command, name uniqueness) and pair it with the selector flowchart from the diagram backlog.",
+      "acceptance_check": null
+    },
+    {
+      "id": "D3",
+      "severity": "Medium",
+      "evidence": "CONFIRMED",
+      "issue": "README 'Checks' says 'Format: run the skill-creator scripts/quick_validate.py against this directory' without a path or link; the tool is not in the repository, exists on this machine only inside a Claude plugin cache, and fails there with ModuleNotFoundError: No module named 'yaml'. scenarios.md:47,58 rely on the same unlocatable tool.",
+      "scenario": "A contributor follows Checks top to bottom with only the docs and a terminal; the first instruction cannot be executed and is silently skipped.",
+      "file": "github-runner/README.md",
+      "line_start": 47,
+      "line_end": 47,
+      "recommended_direction": "Link the validator's source with the exact invocation and its pyyaml requirement, or replace the sentence with a dependency-free in-repo check; make that the single source of truth and point scenarios.md at it.",
+      "acceptance_check": null
+    },
+    {
+      "id": "D4",
+      "severity": "Medium",
+      "evidence": "CONFIRMED",
+      "issue": "'Prepare the selector' is one 188-word, 13-sentence paragraph; the prerequisite that a workflow_dispatch workflow must exist on the default branch before any candidate dispatch with --ref (the defect scenarios.md:52 records as found in practice) is sentence 7, surrounded by copy, pin, merge, dispatch and lint instructions.",
+      "scenario": "The agent reaches 'dispatch both modes with --ref', gh workflow run fails on the candidate branch, and the explanation is buried in a paragraph it already read.",
+      "file": "github-runner/references/ci.md",
+      "line_start": 7,
+      "line_end": 7,
+      "recommended_direction": "Rewrite as numbered steps (copy helper, adapt workflow, bootstrap gate as its own heading with what to report when merge authorization is missing, configure variables, pin RUNNER_SELECTOR_SHA, dispatch both modes and verify head SHA); keep the trust rationale where it is.",
+      "acceptance_check": null
+    },
+    {
+      "id": "D5",
+      "severity": "Medium",
+      "evidence": "CONFIRMED",
+      "issue": "Helper CLI contracts are undocumented: inspect JSON shape {directory, exists, registration{agentId,agentName,gitHubUrl}, preparation{status,version,sha256,account}}, .preparation.json fields and status values (incomplete/prepared), the runner=<json> GITHUB_OUTPUT line, exit codes (prepare_runner 1 with 'Preparation/inspection refused: \"...\"', macos_service 2, remote_command 2, select_runner 1), and the resolved absolute no-symlink path precondition of prepare_runner.py (documented for macos_service.py at platforms.md:54 but not for prepare_runner.py; the setup.md example run under macOS $TMPDIR failed on this guard).",
+      "scenario": "An autonomous agent stages the archive under $TMPDIR on macOS, gets exit 1, cannot distinguish 'wrong path' from 'checksum mismatch' without parsing free text, and later must parse inspect JSON whose keys are specified nowhere.",
+      "file": "github-runner/references/setup.md",
+      "line_start": 20,
+      "line_end": 26,
+      "recommended_direction": "Add a helper reference (README section or references/helpers.md) with per-helper synopsis, preconditions, outputs, exit codes and guarantees; add one sentence beside the setup.md prepare example that --directory must be an absolute symlink-free path (resolve /tmp, /var, $TMPDIR aliases on macOS).",
+      "acceptance_check": null
+    },
+    {
+      "id": "D6",
+      "severity": "Low",
+      "evidence": "CONFIRMED",
+      "issue": "Install/invoke conventions differ from the root README and sibling skills: '--skill github-runner' vs 'diegomarino/my-skills@<skill>' (both accepted by cached skills CLI 1.7.1), 'after this skill is published' caveat present only here, and '$github-runner' vs '/skill-name'.",
+      "scenario": "A reader coming from the root table runs the @github-runner form before merge and gets not-found; two conventions for one action invite a fix in only one place.",
+      "file": "github-runner/README.md",
+      "line_start": 7,
+      "line_end": 24,
+      "recommended_direction": "Use the root form (with -g variant) in the skill README, state once that $github-runner is the Codex spelling and /github-runner the Claude Code spelling, and align the pre-publication caveat between root and skill README.",
+      "acceptance_check": null
+    },
+    {
+      "id": "D7",
+      "severity": "Low",
+      "evidence": "CONFIRMED",
+      "issue": "Same facts restated in many places: dedicated non-admin runtime account rule (README:26, SKILL.md:12,18, discovery.md:25, platforms.md:7,20, setup.md:3, credentials.md:3), Python 3.9+ (root README:20, README:43, setup.md:16, discovery.md:27), test invocation in three cwd conventions (root README:37, README:50, ci.md:43), hosted-label verification date (select_runner.py:10, ci.md:27).",
+      "scenario": "All copies agree today; the first edit to one copy makes the others wrong, and the agent-facing copies drift on a different maintenance reflex than the human README.",
+      "file": "github-runner/references/platforms.md",
+      "line_start": 7,
+      "line_end": 7,
+      "recommended_direction": "Choose canonical homes (account rule -> platforms.md common section; Python version and test commands -> skill README; label date -> code comment) and reduce the other locations to one clause plus a link.",
+      "acceptance_check": null
+    },
+    {
+      "id": "D8",
+      "severity": "Low",
+      "evidence": "CONFIRMED",
+      "issue": "tests/scenarios.md mixes the reusable scenario spec (lines 1-38) with a dated evaluation log (40-58: tool versions, process notes, '24 new helper tests and all 99 existing repository tests passed (123 total)'); counts are correct today (24 run; 37+59+3 = 99 by grep) and will drift.",
+      "scenario": "A maintainer re-running the scenarios needs A-D and the adversarial regressions; the history is changelog material that also ships to every installer.",
+      "file": "github-runner/tests/scenarios.md",
+      "line_start": 40,
+      "line_end": 58,
+      "recommended_direction": "Keep lines 1-38 as the spec; move the evaluation history to a dated tests/evaluation-log.md or a clearly dated appendix and replace absolute counts with 'all tests passed at <sha>'.",
+      "acceptance_check": null
+    },
+    {
+      "id": "D9",
+      "severity": "Low",
+      "evidence": "CONFIRMED",
+      "issue": "platforms.md (12.8 KB) bundles common rules (2.8 KB), Linux (1.9 KB), macOS (4.3 KB), Windows (2.7 KB) and availability (1.1 KB) while SKILL.md:26 instructs the agent to use 'the target branch'.",
+      "scenario": "An agent on a Linux systemd host carries the macOS and Windows material in context for the whole session.",
+      "file": "github-runner/references/platforms.md",
+      "line_start": 1,
+      "line_end": 84,
+      "recommended_direction": "Optional split: platforms.md keeps common + lifecycle decision + availability; per-OS branches move to platforms-linux.md, platforms-macos.md, platforms-windows.md with one-line stub headings left behind so existing links keep resolving.",
+      "acceptance_check": null
+    },
+    {
+      "id": "D10",
+      "severity": "Low",
+      "evidence": "CONFIRMED",
+      "issue": "No diagram exists anywhere in the skill; the four-gate lifecycle (SKILL.md:8-36), the selector routing decision (ci.md:23-34), the credential boundaries (credentials.md:5-9) and the macOS agent-to-daemon conversion (platforms.md:38-61) are prose only.",
+      "scenario": "'Which condition sent my job to hosted?' and 'LaunchAgent or LaunchDaemon?' are decision trees that a flowchart answers at a glance where the prose needs a full read.",
+      "file": "github-runner/SKILL.md",
+      "line_start": 8,
+      "line_end": 36,
+      "recommended_direction": "Add the Mermaid skeletons from the report's diagram backlog in value order: selector flowchart (ci.md), four-gate stateDiagram (SKILL.md), macOS conversion flowchart (platforms.md), credential sequence (credentials.md); render verification was BLOCKED locally (mmdc has no browser).",
+      "acceptance_check": null
+    }
+  ]
+}

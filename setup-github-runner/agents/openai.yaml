@@ -1,0 +1,7 @@
+interface:
+  display_name: "Set Up GitHub Runner"
+  short_description: "Check and configure self-hosted GitHub runners"
+  default_prompt: "Use $setup-github-runner to check this repository and intended host for a self-hosted runner and help configure it if needed."
+
+policy:
+  allow_implicit_invocation: false

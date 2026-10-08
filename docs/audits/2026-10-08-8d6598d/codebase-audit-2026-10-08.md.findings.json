@@ -1,0 +1,158 @@
+{
+  "audit": "codebase",
+  "snapshot": {
+    "sha": "8d6598de262ea3bef0f947c30aa747d5c8ea7263",
+    "dirty": true,
+    "branch": "feat/github-runner",
+    "readme_diff_sha256": "21779ad43faa6e44eb4aec8d789646116f95a28dbd633aaeb0f32c778cb23502",
+    "scope": "github-runner/** (19 untracked files) plus git diff HEAD -- README.md",
+    "model": "claude-fable-5-1",
+    "date": "2026-10-08"
+  },
+  "findings": [
+    {
+      "id": "C1",
+      "severity": "High",
+      "evidence": "CONFIRMED",
+      "issue": "prepare refuses every current official Linux/macOS runner archive because the tarballs contain relative symlinks under externals/node{20,24}/bin and the helper rejects any link entry.",
+      "scenario": "Follow setup.md with actions-runner-osx-arm64-2.338.0.tar.gz and its official digest df4cebda25c86a886ed204e49fee63f5c2e7cec5f447b5c98440a826bbdf9df2 -> exit 1 'Archive links and special entries require manual review'; linux-x64 asset has the same six symlinks; nothing is created and no .preparation.json can ever exist for a real instance.",
+      "file": "github-runner/scripts/prepare_runner.py",
+      "line_start": 80,
+      "line_end": 82,
+      "recommended_direction": "Allow symlink entries whose normalized target (joined to the entry's parent) stays inside the instance root and create them with os.symlink; keep refusing hard links, devices and escaping targets; add tests for an in-tree relative symlink and an escaping one.",
+      "acceptance_check": "python3 scripts/prepare_runner.py prepare --archive actions-runner-osx-arm64-2.338.0.tar.gz --sha256 df4cebda25c86a886ed204e49fee63f5c2e7cec5f447b5c98440a826bbdf9df2 --version 2.338.0 --directory <resolved-parent>/instance --expected-user \"$(id -un)\" currently exits 1; passes when it exits 0, .preparation.json reads prepared, and readlink instance/externals/node20/bin/npm prints ../lib/node_modules/npm/bin/npm-cli.js"
+    },
+    {
+      "id": "C2",
+      "severity": "High",
+      "evidence": "PLAUSIBLE",
+      "issue": "inspect rejects a .runner file that starts with a UTF-8 BOM; the official runner writes .runner via File.WriteAllText(path, json, Encoding.UTF8) (IOUtil.SaveObject), which emits a BOM, so the documented safe readback fails on real instances.",
+      "scenario": "Registered instance; agent runs the documented inspect --directory readback -> 'Unexpected UTF-8 BOM (decode using utf-8-sig)' exit 1 (reproduced with a BOM fixture); the BOM origin is traced in actions/runner source (ConfigurationStore.cs:358 -> IOUtil.cs:42) but not reproduced on a live instance.",
+      "file": "github-runner/scripts/prepare_runner.py",
+      "line_start": 126,
+      "line_end": 126,
+      "recommended_direction": "Read state files with encoding='utf-8-sig'; add a BOM fixture test.",
+      "acceptance_check": "printf '\\xef\\xbb\\xbf{\"agentId\":42,\"agentName\":\"box\",\"gitHubUrl\":\"https://github.com/acme/widget\"}' > <dir>/.runner && python3 scripts/prepare_runner.py inspect --directory <dir> currently exits 1; passes when it prints \"agentId\": 42. Live confirmation: head -c 3 .runner | xxd shows efbb bf on a registered instance and inspect succeeds."
+    },
+    {
+      "id": "C3",
+      "severity": "Medium",
+      "evidence": "CONFIRMED",
+      "issue": "Concurrency group keyed only on workflow+ref with cancel-in-progress true cancels the documented acceptance pair (preferred run and force_hosted dispatch on the same candidate) when the dispatches overlap.",
+      "scenario": "ci.md:7,37 require both modes on the same final candidate; both resolve to the same github.ref and share the group; dispatching the second while the first is queued or running cancels the first, yielding a 'cancelled' conclusion the verification table cannot accept.",
+      "file": "github-runner/assets/ci.yml",
+      "line_start": 13,
+      "line_end": 16,
+      "recommended_direction": "Include inputs.force_hosted or github.run_id for workflow_dispatch in the group key, or disable cancel-in-progress for workflow_dispatch, and state in ci.md that the two acceptance runs must be serialized or carry distinct groups.",
+      "acceptance_check": "Two gh workflow run --ref <candidate> dispatches (one with force_hosted=true) within a minute currently leave the first run cancelled; passes when both reach a terminal success/failure conclusion."
+    },
+    {
+      "id": "C4",
+      "severity": "Medium",
+      "evidence": "CONFIRMED",
+      "issue": "Selector collapses all fallback causes (misconfiguration, untrusted ref, bad PAT, HTTP errors, busy/offline, label mismatch, truncated inventory) into an identical runner=\"<hosted>\" line with no reason code.",
+      "scenario": "Misspell PREFERRED_RUNNER_NAME as PREFERED_RUNNER_NAME on the trusted ref -> runner=\"ubuntu-24.04\", exit 0, no other output; identical to an expired PAT or a busy runner; workflow stays green indefinitely with self-hosted routing silently disabled.",
+      "file": "github-runner/scripts/select_runner.py",
+      "line_start": 57,
+      "line_end": 93,
+      "recommended_direction": "Return a closed-set reason constant alongside the label, print ::notice:: with it and write reason= to GITHUB_OUTPUT; never include exception text; consider failing the job for configuration-class errors as HOSTED_RUNNER already does.",
+      "acceptance_check": "Running the selector with a misspelled variable currently prints only runner=...; passes when a reason such as missing-config is printed/output alongside."
+    },
+    {
+      "id": "C5",
+      "severity": "Medium",
+      "evidence": "CONFIRMED",
+      "issue": "Selector queries by name only and emits a label set, so it cannot detect a second runner carrying the custom label or a self-hosted runner carrying a hosted label; the invariant the routing depends on is delegated entirely to a manual gate.",
+      "scenario": "A colleague registers another runner with label repo-ci or labels a self-hosted box ubuntu-latest; selector still finds exactly one idle runner named worker and emits [self-hosted, repo-ci, Linux, X64]; GitHub schedules on whichever labelled runner is free and the PAT-bearing select job can land on the mislabelled host.",
+      "file": "github-runner/scripts/select_runner.py",
+      "line_start": 75,
+      "line_end": 76,
+      "recommended_direction": "Drop the name filter (or add an unfiltered pass), fall back with a reason when more than one runner carries the custom label or any self-hosted runner carries HOSTED_RUNNER/ubuntu-latest, keep the name check as identity assertion; document the residual org-group blind spot.",
+      "acceptance_check": "With a fixture inventory containing two runners labelled repo-ci, select() currently returns the label list; passes when it returns the hosted fallback (with reason)."
+    },
+    {
+      "id": "C6",
+      "severity": "Medium",
+      "evidence": "CONFIRMED",
+      "issue": "On Windows prepare silently skips the parent-directory ownership guard and the not-root/elevated guard because both are gated on hasattr(os, 'getuid'/'geteuid'); docs promise the same account/path guards on every platform.",
+      "scenario": "Elevated Administrator shell whose username matches --expected-user runs prepare into a parent owned by SYSTEM; both guards evaluate to skip, extraction proceeds, receipt records the account as if verified.",
+      "file": "github-runner/scripts/prepare_runner.py",
+      "line_start": 46,
+      "line_end": 54,
+      "recommended_direction": "Implement Windows equivalents (elevation check, parent owner SID) or refuse on Windows with an explicit message and document the gap in setup.md.",
+      "acceptance_check": "On Windows, prepare from an elevated shell currently succeeds; passes when it refuses or when an explicit platform-unsupported message is emitted and documented."
+    },
+    {
+      "id": "C7",
+      "severity": "Medium",
+      "evidence": "CONFIRMED",
+      "issue": "setup.md's gh api example yields the asset digest as sha256:<hex>, but prepare --sha256 only accepts 64 bare hex characters, so the documented digest source is rejected.",
+      "scenario": "Operator passes --sha256 sha256:af4b794c... taken from the documented command -> 'Invalid digest or version' (reproduced); nothing says to strip the prefix, nudging toward recomputing the digest locally, which setup.md forbids.",
+      "file": "github-runner/references/setup.md",
+      "line_start": 10,
+      "line_end": 14,
+      "recommended_direction": "Accept an optional sha256: prefix in prepare() (reject other algorithms) or add the stripping step next to the gh api example.",
+      "acceptance_check": "prepare --sha256 sha256:<official hex> currently exits 1 'Invalid digest or version'; passes when it is accepted (or the doc shows the exact stripping command)."
+    },
+    {
+      "id": "C8",
+      "severity": "Medium",
+      "evidence": "CONFIRMED",
+      "issue": "Six safety guards are non-pinning: the three pagination guards (short page, 1000 cap, cross-page total), the 64 KiB state-file cap, the parent-ownership guard and the root guard can be deleted with the suite still green; for the first three the mock's IndexError is swallowed by select()'s except Exception.",
+      "scenario": "Mutation runs on temp copies: deleting 'or len(batch) < 100', 'count > 1000', the 'count != total' check, or the st_size cap, or either identity guard, leaves 24/24 green; ci.md:31 advertises the pagination guards as safety properties.",
+      "file": "github-runner/tests/test_select_runner.py",
+      "line_start": 95,
+      "line_end": 103,
+      "recommended_direction": "Assert request counts per pagination case or make the mock raise a non-Exception sentinel; add a >64 KiB state-file test; add an injectable identity/ownership seam to prepare() with root and foreign-owner tests.",
+      "acceptance_check": "Deleting 'or len(batch) < 100' from select_runner.py currently leaves the suite green; passes when at least one test fails for each of the six mutations."
+    },
+    {
+      "id": "C9",
+      "severity": "Low",
+      "evidence": "CONFIRMED",
+      "issue": "macOS renderer rejects legitimate short names with uppercase letters or dots (BuildCI, build.ci) and reports it as 'Choose a dedicated standard runtime account.'",
+      "scenario": "Account created as BuildCI; macos_service.py --account BuildCI -> exit 2 with the policy-sounding message (reproduced); operator cannot tell whether to rename the account.",
+      "file": "github-runner/scripts/macos_service.py",
+      "line_start": 28,
+      "line_end": 29,
+      "recommended_direction": "Allow [A-Za-z0-9_][A-Za-z0-9_.-]{0,63} and split the message into reserved-account vs unsupported-characters.",
+      "acceptance_check": ""
+    },
+    {
+      "id": "C10",
+      "severity": "Low",
+      "evidence": "CONFIRMED",
+      "issue": "prepare/inspect reject /tmp/... and /var/... on macOS (resolved to /private/...) with a generic message; only platforms.md warns about the alias and only for the renderer.",
+      "scenario": "inspect --directory /tmp/stage/instance on macOS -> 'Use an absolute resolved directory without symlinks' (reproduced); setup.md/discovery.md/verification.md give no hint.",
+      "file": "github-runner/scripts/prepare_runner.py",
+      "line_start": 28,
+      "line_end": 32,
+      "recommended_direction": "Include the resolved path in the error and add the alias note to setup.md.",
+      "acceptance_check": ""
+    },
+    {
+      "id": "C11",
+      "severity": "Low",
+      "evidence": "CONFIRMED",
+      "issue": "Skill README references a skill-creator scripts/quick_validate.py that does not exist in this repository and uses 'npx skills add ... --skill' while the root README and both sibling skills use the '@<skill>' form.",
+      "scenario": "Newcomer follows README 'Format' check and cannot find the validator; two install syntaxes for one CLI in one repo.",
+      "file": "github-runner/README.md",
+      "line_start": 10,
+      "line_end": 48,
+      "recommended_direction": "Link or drop the validator reference; align the install command with the repository's @<skill> form.",
+      "acceptance_check": ""
+    },
+    {
+      "id": "C12",
+      "severity": "Low",
+      "evidence": "CONFIRMED",
+      "issue": "PAT-bearing select job pins actions/checkout@v6 by mutable tag while ci.md cites GitHub's hardening guide, which recommends full-SHA pinning, as the template's source.",
+      "scenario": "Template positioned as a hardened trust boundary ships a moving-tag action in the job that holds RUNNER_READ_TOKEN, without stating the trade-off.",
+      "file": "github-runner/assets/ci.yml",
+      "line_start": 25,
+      "line_end": 49,
+      "recommended_direction": "Pin to the full commit SHA with a version comment, or state in ci.md that tag pinning of this first-party action is accepted.",
+      "acceptance_check": ""
+    }
+  ]
+}

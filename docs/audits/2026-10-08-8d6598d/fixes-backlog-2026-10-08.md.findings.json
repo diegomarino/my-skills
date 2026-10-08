@@ -1,0 +1,769 @@
+{
+  "audit": "backlog",
+  "snapshot": {
+    "sha": "8d6598de262ea3bef0f947c30aa747d5c8ea7263",
+    "dirty": true,
+    "branch": "feat/github-runner",
+    "short_sha": "8d6598d",
+    "readme_diff_sha256": "21779ad43faa6e44eb4aec8d789646116f95a28dbd633aaeb0f32c778cb23502",
+    "scope": "github-runner/** (19 untracked files) plus root README.md diff vs HEAD",
+    "model": "claude-fable-5-1",
+    "date": "2026-10-08",
+    "audits": [
+      "change",
+      "codebase",
+      "docs",
+      "process",
+      "security",
+      "ux"
+    ],
+    "repair_events": 1,
+    "drift_events": 0
+  },
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "High",
+      "issue": "`prepare` refuses every official Linux/macOS runner archive (in-tree relative symlinks under externals/node*/bin)",
+      "behavioral_description": "Following setup.md with the real release asset ends in 'Archive links and special entries require manual review', exit 1; the receipted preparation path, inspect readback and resume guarantees are unreachable on real input, so agents fall back to bare tar with none of the guards.",
+      "cited_ids": [
+        "X1",
+        "C1"
+      ],
+      "evidence_provenance": [
+        {
+          "cited_id": "X1",
+          "evidence": "CONFIRMED"
+        },
+        {
+          "cited_id": "C1",
+          "evidence": "CONFIRMED"
+        }
+      ],
+      "file": "github-runner/scripts/prepare_runner.py",
+      "line_start": 80,
+      "line_end": 82,
+      "acceptance_check": "In a mktemp dir outside the project, as a non-root user: python3 scripts/prepare_runner.py prepare --archive actions-runner-osx-arm64-2.338.0.tar.gz --sha256 df4cebda25c86a886ed204e49fee63f5c2e7cec5f447b5c98440a826bbdf9df2 --version 2.338.0 --directory <resolved-parent>/instance --expected-user \"$(id -un)\" currently exits 1; passes when it exits 0, .preparation.json reads status prepared, and readlink instance/externals/node20/bin/npm prints ../lib/node_modules/npm/bin/npm-cli.js."
+    },
+    {
+      "id": "F2",
+      "severity": "High",
+      "issue": "`inspect` rejects real .runner files because the runner writes them with a UTF-8 BOM",
+      "behavioral_description": "The only sanctioned credential-safe readback of registration identity fails on every real instance with 'Unexpected UTF-8 BOM', pushing the agent to read .runner by hand next to .credentials.",
+      "cited_ids": [
+        "X2",
+        "C2"
+      ],
+      "evidence_provenance": [
+        {
+          "cited_id": "X2",
+          "evidence": "CONFIRMED"
+        },
+        {
+          "cited_id": "C2",
+          "evidence": "PLAUSIBLE"
+        }
+      ],
+      "file": "github-runner/scripts/prepare_runner.py",
+      "line_start": 126,
+      "line_end": 126,
+      "acceptance_check": "printf '\\xef\\xbb\\xbf{\"agentId\":42,\"agentName\":\"box\",\"gitHubUrl\":\"https://github.com/acme/widget\"}' > <tmp>/bomcase/.runner && python3 scripts/prepare_runner.py inspect --directory <tmp>/bomcase currently exits 1; passes when it exits 0 and prints \"agentId\": 42. On a real host: head -c 3 .runner | xxd shows efbb bf and the same inspect succeeds."
+    },
+    {
+      "id": "F3",
+      "severity": "High",
+      "issue": "Every hosted fallback of the selector is silent and reason-free; misconfiguration, expired PAT and 'runner busy' are byte-identical",
+      "behavioral_description": "A misspelled variable, a RUNNER_LABELS array missing the architecture, an expired token, a stale TRUSTED_RUNNER_REF, an API error and a busy runner all produce exactly runner=\"ubuntu-24.04\", exit 0, nothing on stderr; CI stays green on hosted runners indefinitely and the persistent host is silently never used; a local dry run dies on 'Invalid selector output path' without naming GITHUB_OUTPUT.",
+      "cited_ids": [
+        "U1",
+        "X3",
+        "C4",
+        "P2",
+        "D2"
+      ],
+      "evidence_provenance": [
+        {
+          "cited_id": "U1",
+          "evidence": "CONFIRMED"
+        },
+        {
+          "cited_id": "X3",
+          "evidence": "CONFIRMED"
+        },
+        {
+          "cited_id": "C4",
+          "evidence": "CONFIRMED"
+        },
+        {
+          "cited_id": "P2",
+          "evidence": "CONFIRMED"
+        },
+        {
+          "cited_id": "D2",
+          "evidence": "CONFIRMED"
+        }
+      ],
+      "file": "github-runner/scripts/select_runner.py",
+      "line_start": 57,
+      "line_end": 106,
+      "severity_provenance": [
+        {
+          "cited_id": "U1",
+          "severity": "High"
+        },
+        {
+          "cited_id": "X3",
+          "severity": "Medium"
+        },
+        {
+          "cited_id": "C4",
+          "severity": "Medium"
+        },
+        {
+          "cited_id": "P2",
+          "severity": "Medium"
+        },
+        {
+          "cited_id": "D2",
+          "severity": "Medium"
+        }
+      ],
+      "acceptance_check": "env -i HOSTED_RUNNER=ubuntu-24.04 GITHUB_OUTPUT=/dev/null GITHUB_REPOSITORY=acme/widget PREFERRED_RUNNER_NAME=build-box PREFERRED_RUNNER_LABEL=widget-ci RUNNER_LABELS='Linux,X64' RUNNER_READ_TOKEN=x TRUSTED_EVENT=true python3 github-runner/scripts/select_runner.py currently prints exactly runner=\"ubuntu-24.04\" with empty stderr; passes when a line naming the non-secret reason (e.g. reason=RUNNER_LABELS-not-json-array) is emitted. Corroborating: select() with RUNNER_LABELS='[\"Linux\"]' and select() with a busy runner must return distinguishable results."
+    },
+    {
+      "id": "F4",
+      "severity": "High",
+      "issue": "Trusted-ref gate github.ref == vars.TRUSTED_RUNNER_REF is case-insensitive; a case-variant unprotected branch is routed to the persistent host",
+      "behavioral_description": "A write collaborator who cannot push to the protected trusted branch pushes refs/heads/MAIN; the expression evaluates true, TRUSTED_EVENT is set, and the checks job checks out the attacker's commit on the self-hosted host.",
+      "cited_ids": [
+        "S1"
+      ],
+      "evidence_provenance": [
+        {
+          "cited_id": "S1",
+          "evidence": "PLAUSIBLE"
+        }
+      ],
+      "file": "github-runner/assets/ci.yml",
+      "line_start": 41,
+      "line_end": 42,
+      "acceptance_check": "In a mktemp copy with PYTHONDONTWRITEBYTECODE=1: GITHUB_OUTPUT=/dev/null HOSTED_RUNNER=ubuntu-24.04 TRUSTED_EVENT=true GITHUB_REF=refs/heads/MAIN TRUSTED_RUNNER_REF=refs/heads/main GITHUB_REPOSITORY=acme/widget RUNNER_READ_TOKEN=x PREFERRED_RUNNER_NAME=w PREFERRED_RUNNER_LABEL=repo-ci RUNNER_LABELS='[\"Linux\",\"X64\"]' python3 scripts/select_runner.py must print runner=\"ubuntu-24.04\" before any API request; today the selector ignores GITHUB_REF and with a stubbed API would emit the self-hosted label array. After the fix test_select_runner.py carries a case-variant subtest."
+    },
+    {
+      "id": "F5",
+      "severity": "High",
+      "issue": "HOSTED_RUNNER rejection names neither the received value nor the accepted subset, which exists only in source",
+      "behavioral_description": "An operator who picks ubuntu-22.04-arm from GitHub's own standard-runner table sees 'HOSTED_RUNNER is required and must be an approved standard GitHub-hosted label' on the first run; the primary journey stops and resolves only by reading source.",
+      "cited_ids": [
+        "U2"
+      ],
+      "evidence_provenance": [
+        {
+          "cited_id": "U2",
+          "evidence": "CONFIRMED"
+        }
+      ],
+      "file": "github-runner/scripts/select_runner.py",
+      "line_start": 12,
+      "line_end": 52,
+      "acceptance_check": "env -i HOSTED_RUNNER=ubuntu-22.04-arm GITHUB_OUTPUT=/dev/null python3 github-runner/scripts/select_runner.py currently fails without naming the received value or any accepted label; passes when stderr names the received value and enumerates the accepted labels."
+    },
+    {
+      "id": "F6",
+      "severity": "High",
+      "issue": "RUNNER_LABELS must contain one OS and one architecture label; the docs never say so and the failure is a silent fallback",
+      "behavioral_description": "An operator copies the labels shown on the runner page (self-hosted, Linux) or sets just the OS; every push runs on hosted Ubuntu with zero API calls and nothing in the docs points at RUNNER_LABELS as the cause.",
+      "cited_ids": [
+        "D1"
+      ],
+      "evidence_provenance": [
+        {
+          "cited_id": "D1",
+          "evidence": "CONFIRMED"
+        }
+      ],
+      "file": "github-runner/references/ci.md",
+      "line_start": 15,
+      "line_end": 15,
+      "acceptance_check": "grep -n 'RUNNER_LABELS' github-runner/references/ci.md fails today (the row mentions neither an architecture-label requirement nor the silent fallback); passes once the row states one OS label and one architecture label are required, extras are AND-matched, and any other array returns HOSTED_RUNNER before any API request; select(env | RUNNER_LABELS='[\"Linux\"]', fetch) must still return the fallback with zero fetch calls."
+    },
+    {
+      "id": "F7",
+      "severity": "Medium",
+      "issue": "Workflow concurrency group (workflow + ref, cancel-in-progress) cancels the documented preferred/force_hosted acceptance pair",
+      "behavioral_description": "Pushing the candidate and then dispatching the preferred and force_hosted runs on the same ref, as ci.md instructs, places all runs in one cancel-in-progress group; the required preferred-host evidence ends as cancelled and an agent may misreport it as a routing failure.",
+      "cited_ids": [
+        "C3",
+        "P1"
+      ],
+      "evidence_provenance": [
+        {
+          "cited_id": "C3",
+          "evidence": "CONFIRMED"
+        },
+        {
+          "cited_id": "P1",
+          "evidence": "PLAUSIBLE"
+        }
+      ],
+      "file": "github-runner/assets/ci.yml",
+      "line_start": 13,
+      "line_end": 16,
+      "acceptance_check": "On a throwaway repo: gh workflow run \"Preferred runner CI\" --ref <candidate>; gh workflow run \"Preferred runner CI\" --ref <candidate> -f force_hosted=true; sleep 60; gh run list --workflow \"Preferred runner CI\" --branch <candidate> --json conclusion,event shows a cancelled conclusion today and none once fixed."
+    },
+    {
+      "id": "F8",
+      "severity": "Medium",
+      "issue": "The digest the documented gh api command returns is sha256:<hex> and prepare --sha256 rejects it",
+      "behavioral_description": "The documented command yields digest sha256:<hex>; passing it verbatim fails with 'Invalid digest or version', which names neither the argument nor the prefix, nudging the operator to recompute the digest, which the doc forbids.",
+      "cited_ids": [
+        "C7",
+        "U3"
+      ],
+      "evidence_provenance": [
+        {
+          "cited_id": "C7",
+          "evidence": "CONFIRMED"
+        },
+        {
+          "cited_id": "U3",
+          "evidence": "CONFIRMED"
+        }
+      ],
+      "file": "github-runner/scripts/prepare_runner.py",
+      "line_start": 48,
+      "line_end": 49,
+      "acceptance_check": "prepare --sha256 sha256:<official hex> currently exits 1 with 'Invalid digest or version'; passes when it is accepted (or the doc shows the exact stripping command) and the message splits --sha256 from --version and echoes the offending value."
+    },
+    {
+      "id": "F9",
+      "severity": "Medium",
+      "issue": "status: incomplete after an interrupted extraction has no documented or coded forward path",
+      "behavioral_description": "After a dropped SSH session mid-extraction, inspect reports incomplete, re-running prepare is refused, the doc forbids cleanup or overwrite and names no resume; the fresh-install journey stalls at step 2.",
+      "cited_ids": [
+        "P3",
+        "U11"
+      ],
+      "evidence_provenance": [
+        {
+          "cited_id": "P3",
+          "evidence": "CONFIRMED"
+        },
+        {
+          "cited_id": "U11",
+          "evidence": "CONFIRMED"
+        }
+      ],
+      "file": "github-runner/scripts/prepare_runner.py",
+      "line_start": 50,
+      "line_end": 51,
+      "acceptance_check": "After the SIGKILL fixture (patch shutil.copyfileobj to os._exit(137) on the 50th call, run prepare), a documented recovery sequence ends with inspect printing \"status\": \"prepared\"; today no documented sequence does."
+    },
+    {
+      "id": "F10",
+      "severity": "Medium",
+      "issue": "Refusal messages of prepare/inspect/renderer name the wrong condition: macOS /tmp, /var, mktemp -d paths refused as 'symlinks' without the resolved path; expected-user mismatch reported as 'not root'",
+      "behavioral_description": "On macOS a directory the operator created one second ago is refused as having symlink path components with no resolved path offered, and a missing or relative directory gets the same message; a mistyped --expected-user is reported as a root problem naming neither account.",
+      "cited_ids": [
+        "U4",
+        "U5",
+        "C10",
+        "P7"
+      ],
+      "evidence_provenance": [
+        {
+          "cited_id": "U4",
+          "evidence": "CONFIRMED"
+        },
+        {
+          "cited_id": "U5",
+          "evidence": "CONFIRMED"
+        },
+        {
+          "cited_id": "C10",
+          "evidence": "CONFIRMED"
+        },
+        {
+          "cited_id": "P7",
+          "evidence": "CONFIRMED"
+        }
+      ],
+      "file": "github-runner/scripts/prepare_runner.py",
+      "line_start": 28,
+      "line_end": 47,
+      "severity_provenance": [
+        {
+          "cited_id": "U4",
+          "severity": "Medium"
+        },
+        {
+          "cited_id": "U5",
+          "severity": "Medium"
+        },
+        {
+          "cited_id": "C10",
+          "severity": "Low"
+        },
+        {
+          "cited_id": "P7",
+          "severity": "Low"
+        }
+      ],
+      "acceptance_check": "python3 scripts/prepare_runner.py inspect --directory /tmp/x on macOS currently prints 'Use an absolute resolved directory without symlinks'; passes when the message shows /tmp/x resolves to /private/tmp/x and says to pass that; prepare --expected-user ci_user as user diego currently says 'not root'; passes when it names the current and expected accounts."
+    },
+    {
+      "id": "F11",
+      "severity": "Medium",
+      "issue": "Helper CLI contract (preconditions, inspect JSON shape, receipt states, runner= line, exit codes) is neither consistent across helpers nor documented in docs or --help",
+      "behavioral_description": "An agent using the docs as its spec cannot learn the inspect output shape, the receipt states, or whether an exit code means 'fix your command' or 'guard refused' (1/2 differ per helper); ten of thirteen flags have no help text.",
+      "cited_ids": [
+        "D5",
+        "U8",
+        "P5"
+      ],
+      "evidence_provenance": [
+        {
+          "cited_id": "D5",
+          "evidence": "CONFIRMED"
+        },
+        {
+          "cited_id": "U8",
+          "evidence": "CONFIRMED"
+        },
+        {
+          "cited_id": "P5",
+          "evidence": "CONFIRMED"
+        }
+      ],
+      "file": "github-runner/references/setup.md",
+      "line_start": 20,
+      "line_end": 26,
+      "severity_provenance": [
+        {
+          "cited_id": "D5",
+          "severity": "Medium"
+        },
+        {
+          "cited_id": "U8",
+          "severity": "Medium"
+        },
+        {
+          "cited_id": "P5",
+          "severity": "Low"
+        }
+      ],
+      "acceptance_check": "python3 scripts/macos_service.py --help currently shows six bare flag names; passes when every flag has a help string stating meaning and precondition, and a helper reference documents per helper the preconditions, outputs, JSON keys, receipt states and one exit-code contract (2 usage, 1 guard refusal, 0 done)."
+    },
+    {
+      "id": "F12",
+      "severity": "Medium",
+      "issue": "Selector queries by name only and cannot enforce the label-uniqueness / hosted-label-collision invariant the routing depends on",
+      "behavioral_description": "When a second runner later carries the custom label, or a self-hosted box is labelled ubuntu-latest, the selector still finds exactly one runner named as configured and emits the label set; trusted-ref jobs and the PAT-bearing select job can land on an unvetted host.",
+      "cited_ids": [
+        "C5"
+      ],
+      "evidence_provenance": [
+        {
+          "cited_id": "C5",
+          "evidence": "CONFIRMED"
+        }
+      ],
+      "file": "github-runner/scripts/select_runner.py",
+      "line_start": 75,
+      "line_end": 76,
+      "acceptance_check": "With a fixture inventory containing two runners labelled repo-ci, select() currently returns the label list; passes when it returns the hosted fallback (with reason) and when a self-hosted runner carrying HOSTED_RUNNER or ubuntu-latest also triggers the fallback."
+    },
+    {
+      "id": "F13",
+      "severity": "Medium",
+      "issue": "On Windows prepare silently drops the parent-ownership and not-root guards the docs promise on every platform",
+      "behavioral_description": "An elevated Windows shell whose username matches --expected-user can extract into a parent owned by another account; both guards are hasattr-gated no-ops while the docs promise the same guards everywhere.",
+      "cited_ids": [
+        "C6"
+      ],
+      "evidence_provenance": [
+        {
+          "cited_id": "C6",
+          "evidence": "CONFIRMED"
+        }
+      ],
+      "file": "github-runner/scripts/prepare_runner.py",
+      "line_start": 46,
+      "line_end": 54,
+      "acceptance_check": "On Windows, prepare from an elevated shell currently succeeds; passes when it refuses or emits an explicit platform-unsupported message that is also stated in setup.md."
+    },
+    {
+      "id": "F14",
+      "severity": "Medium",
+      "issue": "Six safety guards are non-pinning in the test suite (three pagination guards masked by except Exception, 64 KiB cap, root and parent-owner guards without a seam)",
+      "behavioral_description": "Deleting any of six documented safety guards leaves the 24 tests green; the pagination and size invariants the docs cite can regress silently.",
+      "cited_ids": [
+        "C8"
+      ],
+      "evidence_provenance": [
+        {
+          "cited_id": "C8",
+          "evidence": "CONFIRMED"
+        }
+      ],
+      "file": "github-runner/tests/test_select_runner.py",
+      "line_start": 95,
+      "line_end": 103,
+      "acceptance_check": "Deleting 'or len(batch) < 100' from select_runner.py currently leaves the suite green; passes when at least one test fails for each of the six mutations."
+    },
+    {
+      "id": "F15",
+      "severity": "Medium",
+      "issue": "Service PATH story contradicts the runner: config.sh writes .path and runsvc.sh exports it, overriding the plist --path and the ci.md claim",
+      "behavioral_description": "After any normal registration the daemon runs with whatever PATH the runtime account had in the shell that ran config.sh, not the rendered one; an operator who adds --path sees no effect and ci.md states the opposite of the runner's behaviour.",
+      "cited_ids": [
+        "X4"
+      ],
+      "evidence_provenance": [
+        {
+          "cited_id": "X4",
+          "evidence": "CONFIRMED"
+        }
+      ],
+      "file": "github-runner/references/platforms.md",
+      "line_start": 54,
+      "line_end": 54,
+      "acceptance_check": "The rendered service-plan.txt and platforms.md currently never mention .path/.env; passes when both state the precedence and the plan tells the operator to inspect/set .path as the runtime account."
+    },
+    {
+      "id": "F16",
+      "severity": "Medium",
+      "issue": "Linux guidance has root run sudo ./svc.sh from the runtime-account-owned runner tree (runtime-writable code executed as root), unlike the macOS branch",
+      "behavioral_description": "Any code that ran as the runtime account can rewrite svc.sh, the .service file or the templates, and the next sudo ./svc.sh executes it as root.",
+      "cited_ids": [
+        "S2"
+      ],
+      "evidence_provenance": [
+        {
+          "cited_id": "S2",
+          "evidence": "CONFIRMED"
+        }
+      ],
+      "file": "github-runner/references/platforms.md",
+      "line_start": 28,
+      "line_end": 36,
+      "acceptance_check": "platforms.md Linux section currently shows sudo ./svc.sh as the primary procedure; passes when it installs once, before any job has run, from an administrator-owned reviewed copy (or a rendered systemd unit) and manages the unit only via systemctl, with an explicit never-re-run rule."
+    },
+    {
+      "id": "F17",
+      "severity": "Medium",
+      "issue": "The rendered macOS plan bakes the local staging path into the privileged sudo install line; off-target rendering requires hand-editing a sudo command",
+      "behavioral_description": "When the plan is rendered on the workstation because Python may be absent on the target, the plutil -lint and sudo install lines fail on the target with 'No such file' and the operator must edit a privileged line by hand.",
+      "cited_ids": [
+        "U9"
+      ],
+      "evidence_provenance": [
+        {
+          "cited_id": "U9",
+          "evidence": "CONFIRMED"
+        }
+      ],
+      "file": "github-runner/scripts/macos_service.py",
+      "line_start": 65,
+      "line_end": 78,
+      "acceptance_check": "Rendering with --output-dir <workstation path> currently embeds that path in the sudo install line; passes when a --target-staging-dir or an explicit STAGED_PLIST= placeholder line is used by both commands."
+    },
+    {
+      "id": "F18",
+      "severity": "Medium",
+      "issue": "The default-branch bootstrap gate is invisible: buried mid-paragraph in ci.md and surfaced in the run only as Python's 'can't open file'",
+      "behavioral_description": "The operator adds the helper and workflow on a feature branch and pushes; the sparse checkout succeeds with nothing and the run dies with a Python file-not-found error that never names RUNNER_SELECTOR_SHA or the bootstrap rule, which is sentence 7 of a 188-word paragraph.",
+      "cited_ids": [
+        "D4",
+        "U10"
+      ],
+      "evidence_provenance": [
+        {
+          "cited_id": "D4",
+          "evidence": "CONFIRMED"
+        },
+        {
+          "cited_id": "U10",
+          "evidence": "PLAUSIBLE"
+        }
+      ],
+      "file": "github-runner/references/ci.md",
+      "line_start": 7,
+      "line_end": 7,
+      "acceptance_check": "ci.md 'Prepare the selector' currently has no heading for the bootstrap gate; passes when it is numbered steps with a 'Bootstrap on the default branch first' subsection and ci.yml has a guard step before route that fails with an ::error:: naming the rule."
+    },
+    {
+      "id": "F19",
+      "severity": "Medium",
+      "issue": "Archive refusal messages ('links and special entries', 'missing entry points', 'checksum mismatch') name no entry, expected name or computed value",
+      "behavioral_description": "The operator must re-list the archive by hand to find which member, which required name, or what digest was computed.",
+      "cited_ids": [
+        "U6"
+      ],
+      "evidence_provenance": [
+        {
+          "cited_id": "U6",
+          "evidence": "CONFIRMED"
+        }
+      ],
+      "file": "github-runner/scripts/prepare_runner.py",
+      "line_start": 62,
+      "line_end": 94,
+      "acceptance_check": "prepare on an archive with a symlink member currently prints the generic message; passes when it names the first offending member and type, the missing required names, and the computed digest beside the expected one."
+    },
+    {
+      "id": "F20",
+      "severity": "Medium",
+      "issue": "macOS renderer rejects legitimate account names (uppercase, dots) and never names the offending argument",
+      "behavioral_description": "An account created as Build or build.ci is rejected with 'Choose a dedicated standard runtime account.', which reads as a policy objection; messages never say which flag failed, so operators rename working accounts or guess.",
+      "cited_ids": [
+        "U7",
+        "C9"
+      ],
+      "evidence_provenance": [
+        {
+          "cited_id": "U7",
+          "evidence": "CONFIRMED"
+        },
+        {
+          "cited_id": "C9",
+          "evidence": "CONFIRMED"
+        }
+      ],
+      "file": "github-runner/scripts/macos_service.py",
+      "line_start": 11,
+      "line_end": 37,
+      "severity_provenance": [
+        {
+          "cited_id": "U7",
+          "severity": "Medium"
+        },
+        {
+          "cited_id": "C9",
+          "severity": "Low"
+        }
+      ],
+      "acceptance_check": "macos_service.py --account Build ... currently prints 'Choose a dedicated standard runtime account.'; passes when it either accepts [A-Za-z0-9_][A-Za-z0-9_.-]{0,63} or says 'lowercase letters only' with the flag name and value, with 'reserved account' as a separate message."
+    },
+    {
+      "id": "F21",
+      "severity": "Medium",
+      "issue": "README Checks cites a quick_validate.py that is not in the repo, not linked, and fails on an undeclared PyYAML dependency; no actionlint install pointer",
+      "behavioral_description": "A contributor following Checks top to bottom cannot run the first instruction; the documented py_compile/unittest lines also litter __pycache__ into the skill folder when run without -B.",
+      "cited_ids": [
+        "D3",
+        "P6",
+        "C11"
+      ],
+      "evidence_provenance": [
+        {
+          "cited_id": "D3",
+          "evidence": "CONFIRMED"
+        },
+        {
+          "cited_id": "P6",
+          "evidence": "CONFIRMED"
+        },
+        {
+          "cited_id": "C11",
+          "evidence": "CONFIRMED"
+        }
+      ],
+      "file": "github-runner/README.md",
+      "line_start": 47,
+      "line_end": 52,
+      "severity_provenance": [
+        {
+          "cited_id": "D3",
+          "severity": "Medium"
+        },
+        {
+          "cited_id": "P6",
+          "severity": "Low"
+        },
+        {
+          "cited_id": "C11",
+          "severity": "Low"
+        }
+      ],
+      "acceptance_check": "A fresh clone's Checks section currently has an instruction that cannot be executed from docs and terminal; passes when it links the validator's source and states its PyYAML requirement (or replaces it with an in-repo dependency-free check), adds an actionlint install pointer, and uses python3 -B or PYTHONDONTWRITEBYTECODE=1."
+    },
+    {
+      "id": "F22",
+      "severity": "Low",
+      "issue": "Skill README install/invocation form (--skill, 'after published', $github-runner) diverges from the root README and sibling convention (@<skill>, -g)",
+      "behavioral_description": "A reader coming from the root table gets two contracts for one action and may run the @github-runner form before merge and get a not-found while the skill README hedges and the root README does not.",
+      "cited_ids": [
+        "X5",
+        "D6",
+        "C11"
+      ],
+      "evidence_provenance": [
+        {
+          "cited_id": "X5",
+          "evidence": "CONFIRMED"
+        },
+        {
+          "cited_id": "D6",
+          "evidence": "CONFIRMED"
+        },
+        {
+          "cited_id": "C11",
+          "evidence": "CONFIRMED"
+        }
+      ],
+      "file": "github-runner/README.md",
+      "line_start": 7,
+      "line_end": 24
+    },
+    {
+      "id": "F23",
+      "severity": "Low",
+      "issue": "actions/checkout@v6 is a mutable tag in both jobs of a template that cites the hardening guide and SHA-pins its own selector",
+      "behavioral_description": "Both jobs, including the PAT-bearing selector job, resolve a moving tag at run time while the template's stated posture is full-SHA pinning.",
+      "cited_ids": [
+        "S3",
+        "C12"
+      ],
+      "evidence_provenance": [
+        {
+          "cited_id": "S3",
+          "evidence": "CONFIRMED"
+        },
+        {
+          "cited_id": "C12",
+          "evidence": "CONFIRMED"
+        }
+      ],
+      "file": "github-runner/assets/ci.yml",
+      "line_start": 25,
+      "line_end": 49
+    },
+    {
+      "id": "F24",
+      "severity": "Low",
+      "issue": ".preparation.json carries no format/version stamp and inspect has no version check",
+      "behavioral_description": "A later helper release that adds or renames receipt fields leaves older receipts reporting nulls with no indication of age, and an older helper silently drops newer fields.",
+      "cited_ids": [
+        "P4"
+      ],
+      "evidence_provenance": [
+        {
+          "cited_id": "P4",
+          "evidence": "CONFIRMED"
+        }
+      ],
+      "file": "github-runner/scripts/prepare_runner.py",
+      "line_start": 96,
+      "line_end": 99
+    },
+    {
+      "id": "F25",
+      "severity": "Low",
+      "issue": "The runtime account is --expected-user / --account / $RUNNER_ACCOUNT; 'label' means three different things across surfaces",
+      "behavioral_description": "An operator passes the routing label to the renderer's --label and gets a LaunchDaemon named after it; the same concept is named differently in every helper and document.",
+      "cited_ids": [
+        "U12"
+      ],
+      "evidence_provenance": [
+        {
+          "cited_id": "U12",
+          "evidence": "CONFIRMED"
+        }
+      ],
+      "file": "github-runner/scripts/macos_service.py",
+      "line_start": 20,
+      "line_end": 31
+    },
+    {
+      "id": "F26",
+      "severity": "Low",
+      "issue": "remote_command.py rejects admin@host without pointing at --admin-account and host:2222 as 'not a valid IP address'",
+      "behavioral_description": "The two most common SSH habits are rejected with messages that do not say what to do instead; the colon routes a hostname to the IPv6 branch.",
+      "cited_ids": [
+        "U13"
+      ],
+      "evidence_provenance": [
+        {
+          "cited_id": "U13",
+          "evidence": "CONFIRMED"
+        }
+      ],
+      "file": "github-runner/scripts/remote_command.py",
+      "line_start": 16,
+      "line_end": 24
+    },
+    {
+      "id": "F27",
+      "severity": "Low",
+      "issue": "Same facts restated in up to eight places (dedicated-account rule, Python floor, test command, label verification date)",
+      "behavioral_description": "All copies agree today; the first edit to one copy makes the others wrong, and the agent-facing copies drift on a different reflex than the human README.",
+      "cited_ids": [
+        "D7"
+      ],
+      "evidence_provenance": [
+        {
+          "cited_id": "D7",
+          "evidence": "CONFIRMED"
+        }
+      ],
+      "file": "github-runner/references/platforms.md",
+      "line_start": 7,
+      "line_end": 7
+    },
+    {
+      "id": "F28",
+      "severity": "Low",
+      "issue": "tests/scenarios.md mixes the reusable scenario spec with a dated evaluation log whose absolute counts will drift",
+      "behavioral_description": "Absolute repository-wide test counts and process history ship to every installer and will be wrong after the next test is added anywhere in the repo.",
+      "cited_ids": [
+        "D8"
+      ],
+      "evidence_provenance": [
+        {
+          "cited_id": "D8",
+          "evidence": "CONFIRMED"
+        }
+      ],
+      "file": "github-runner/tests/scenarios.md",
+      "line_start": 40,
+      "line_end": 58
+    },
+    {
+      "id": "F29",
+      "severity": "Low",
+      "issue": "platforms.md bundles common rules + three OS branches + availability while SKILL.md tells the agent to load one branch",
+      "behavioral_description": "An agent on a Linux host carries the macOS and Windows material in context for the whole session.",
+      "cited_ids": [
+        "D9"
+      ],
+      "evidence_provenance": [
+        {
+          "cited_id": "D9",
+          "evidence": "CONFIRMED"
+        }
+      ],
+      "file": "github-runner/references/platforms.md",
+      "line_start": 1,
+      "line_end": 84
+    },
+    {
+      "id": "F30",
+      "severity": "Low",
+      "issue": "No diagram anywhere; the four-gate lifecycle, selector routing, credential boundaries and macOS daemon conversion are prose only",
+      "behavioral_description": "Decision-tree questions such as which condition sent a job to hosted, or LaunchAgent versus LaunchDaemon, require a full prose read.",
+      "cited_ids": [
+        "D10"
+      ],
+      "evidence_provenance": [
+        {
+          "cited_id": "D10",
+          "evidence": "CONFIRMED"
+        }
+      ],
+      "file": "github-runner/SKILL.md",
+      "line_start": 8,
+      "line_end": 36
+    }
+  ]
+}

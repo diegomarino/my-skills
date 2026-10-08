@@ -1,0 +1,193 @@
+{
+  "audit": "ux",
+  "model": "claude-fable-5-1",
+  "report": "docs/audits/2026-10-08-8d6598d/ux-audit-2026-10-08.md",
+  "snapshot": {
+    "sha": "8d6598de262ea3bef0f947c30aa747d5c8ea7263",
+    "short_sha": "8d6598d",
+    "branch": "feat/github-runner",
+    "dirty": true,
+    "readme_diff_sha256": "21779ad43faa6e44eb4aec8d789646116f95a28dbd633aaeb0f32c778cb23502",
+    "scope": "github-runner/** (19 untracked files) plus root README.md diff vs HEAD"
+  },
+  "counts": {
+    "by_severity": {"Critical": 0, "High": 2, "Medium": 9, "Low": 2},
+    "by_evidence": {"CONFIRMED": 12, "PLAUSIBLE": 1, "BLOCKED": 0, "NOT REPRODUCED": 0}
+  },
+  "findings": [
+    {
+      "id": "U1",
+      "severity": "High",
+      "evidence": "CONFIRMED",
+      "issue": "select_runner.py falls back to the hosted label silently on every one of ~15 conditions, so static misconfiguration (CSV RUNNER_LABELS, default-label routing label, empty token, untrusted ref) is indistinguishable from a busy/offline runner; the only output is runner=\"<hosted>\" and a local dry run is blocked by 'Invalid selector output path'.",
+      "scenario": "Operator configures variables per ci.md, pushes to main; checks job runs on ubuntu-24.04 and the select job log is exactly runner=\"ubuntu-24.04\". Local runs with TRUSTED_EVENT=false, with RUNNER_LABELS='Linux,X64' on a trusted event, and with PREFERRED_RUNNER_LABEL=Linux plus empty token all print the same single line and exit 0; running the helper without GITHUB_OUTPUT fails with 'Invalid selector output path'. Operator must read the source to enumerate the conditions.",
+      "file": "github-runner/scripts/select_runner.py",
+      "line_start": 57,
+      "line_end": 106,
+      "related_files": ["github-runner/assets/ci.yml:31-43"],
+      "recommended_direction": "Emit a closed-vocabulary, credential-free reason (stderr and GITHUB_STEP_SUMMARY) on fallback; fail hard like HOSTED_RUNNER on static configuration that can never succeed (unparsable RUNNER_LABELS, default routing label, malformed GITHUB_REPOSITORY); make GITHUB_OUTPUT optional for dry runs or name it in the error.",
+      "acceptance_check": "env -i HOSTED_RUNNER=ubuntu-24.04 GITHUB_OUTPUT=/dev/null GITHUB_REPOSITORY=acme/widget PREFERRED_RUNNER_NAME=build-box PREFERRED_RUNNER_LABEL=widget-ci RUNNER_LABELS='Linux,X64' RUNNER_READ_TOKEN=x TRUSTED_EVENT=true python3 github-runner/scripts/select_runner.py -- fails now (stdout exactly runner=\"ubuntu-24.04\", exit 0, empty stderr); passes when a line naming the RUNNER_LABELS format problem appears or the helper exits non-zero for that static misconfiguration, with no token material in any output. No network is reached (JSON parse fails before the first fetch)."
+    },
+    {
+      "id": "U2",
+      "severity": "High",
+      "evidence": "CONFIRMED",
+      "issue": "HOSTED_RUNNER rejection says 'must be an approved standard GitHub-hosted label' but the 14-entry accepted subset is enumerated only in source; a label present in GitHub's own table (ubuntu-22.04-arm) and a case-drifted value get the same message, and the received value is not echoed.",
+      "scenario": "Operator follows ci.md:27 to GitHub's standard-runner table, sets HOSTED_RUNNER=ubuntu-22.04-arm for an ARM project, pushes; the select job fails with 'HOSTED_RUNNER is required and must be an approved standard GitHub-hosted label'. Only opening select_runner.py reveals the accepted strings.",
+      "file": "github-runner/scripts/select_runner.py",
+      "line_start": 12,
+      "line_end": 52,
+      "related_files": ["github-runner/references/ci.md:16-17", "github-runner/references/ci.md:27", "github-runner/README.md:43"],
+      "recommended_direction": "Print the received value and the accepted list in the message; mirror the accepted list in the ci.md variable table.",
+      "acceptance_check": "env -i HOSTED_RUNNER=ubuntu-22.04-arm GITHUB_OUTPUT=/dev/null python3 github-runner/scripts/select_runner.py -- fails now (message contains neither the received value nor any accepted label); passes when stderr names the received value and enumerates the accepted labels."
+    },
+    {
+      "id": "U3",
+      "severity": "Medium",
+      "evidence": "CONFIRMED",
+      "issue": "The digest value produced by the documented 'gh api repos/actions/runner/releases/latest ... digest' command is 'sha256:<hex>' (confirmed against the live API, v2.338.0); prepare_runner.py rejects it as 'Invalid digest or version' without naming the argument or the prefix.",
+      "scenario": "Operator copies the digest from the setup.md command into --sha256 and gets 'Preparation/inspection refused: \"Invalid digest or version\"'; a version like 'v2.330.0 (latest)' yields the identical message, so the operator cannot tell which flag failed.",
+      "file": "github-runner/scripts/prepare_runner.py",
+      "line_start": 48,
+      "line_end": 49,
+      "related_files": ["github-runner/references/setup.md:9-14"],
+      "recommended_direction": "Accept and strip a sha256: prefix; split the message into per-argument text that echoes the received value.",
+      "acceptance_check": null
+    },
+    {
+      "id": "U4",
+      "severity": "Medium",
+      "evidence": "CONFIRMED",
+      "issue": "On macOS, paths under /tmp, /var and mktemp -d output are refused by macos_service.py --output-dir and prepare_runner.py --directory (prepare and inspect) as having symlink components, with no resolved path offered; a plainly missing output directory receives the same symlink message.",
+      "scenario": "STAGING_DIR=$(mktemp -d) then the documented renderer command: 'Output directory must already exist with no symlink path components.' although the directory was just created. 'inspect --directory /var/...' (a pure readback) fails with 'Use an absolute resolved directory without symlinks'. The fix (pwd -P) is only in platforms.md:54.",
+      "file": "github-runner/scripts/macos_service.py",
+      "line_start": 35,
+      "line_end": 37,
+      "related_files": ["github-runner/scripts/prepare_runner.py:28-32", "github-runner/references/platforms.md:54"],
+      "recommended_direction": "Print the resolved path in the message and suggest passing it; distinguish 'does not exist' from 'has symlink components'; let inspect resolve internally and report both paths.",
+      "acceptance_check": null
+    },
+    {
+      "id": "U5",
+      "severity": "Medium",
+      "evidence": "CONFIRMED",
+      "issue": "An --expected-user name mismatch is reported as 'Run as the verified standard runtime account, not root' even when the caller is not root; neither the current nor the expected account is named.",
+      "scenario": "Operator types --expected-user ci_user for account ci-user (or runs from the admin shell); the message implies a root problem, so they re-work the environment instead of fixing the flag.",
+      "file": "github-runner/scripts/prepare_runner.py",
+      "line_start": 46,
+      "line_end": 47,
+      "recommended_direction": "Split the two conditions: \"Current account 'X' is not the expected runtime account 'Y'\" vs \"Refusing to run as root\".",
+      "acceptance_check": null
+    },
+    {
+      "id": "U6",
+      "severity": "Medium",
+      "evidence": "CONFIRMED",
+      "issue": "Archive refusals ('Archive links and special entries require manual review', 'Archive is missing runner entry points', 'Archive checksum mismatch') name no entry, no required filename and no computed digest, forcing manual re-listing of the archive.",
+      "scenario": "Official asset contains an entry the helper classes as a link; the operator sees only the generic message and must tar -tvf the whole archive. A wrong-platform archive and a corrupt one produce the same 'missing runner entry points'; a truncated download and a wrong-asset digest produce the same 'checksum mismatch'.",
+      "file": "github-runner/scripts/prepare_runner.py",
+      "line_start": 62,
+      "line_end": 94,
+      "recommended_direction": "Include the first offending member name and type, the missing required names, and the computed digest beside the expected one.",
+      "acceptance_check": null
+    },
+    {
+      "id": "U7",
+      "severity": "Medium",
+      "evidence": "CONFIRMED",
+      "issue": "macos_service.py messages never name the offending argument: a mixed-case account ('Build') is rejected as 'Choose a dedicated standard runtime account', a trailing slash on --home as 'Use a resolved absolute non-root path without control characters' (shared with --runner-dir and --path), and a missing --output-dir as a symlink problem.",
+      "scenario": "Dedicated account created as 'Build' in Users & Groups: the renderer refuses with a message that is false for that account and never mentions case. --home /Users/build/ from tab completion: the message does not say which of three path flags failed or that the slash is the cause.",
+      "file": "github-runner/scripts/macos_service.py",
+      "line_start": 11,
+      "line_end": 37,
+      "recommended_direction": "Prefix messages with the flag name and echo the value; separate 'missing' from 'symlinked'; either accept mixed-case account names or state 'lowercase' explicitly.",
+      "acceptance_check": null
+    },
+    {
+      "id": "U8",
+      "severity": "Medium",
+      "evidence": "CONFIRMED",
+      "issue": "Ten of thirteen flags across macos_service.py and prepare_runner.py have no help string; the meaning and preconditions of --label, --path, --output-dir, --version, --expected-user and --directory exist only in reference docs.",
+      "scenario": "Operator runs macos_service.py --help and sees six bare flag names; nothing says --output-dir must pre-exist and be resolved, or that --label is a launchd label, so each rule is discovered by failing it.",
+      "file": "github-runner/scripts/macos_service.py",
+      "line_start": 20,
+      "line_end": 25,
+      "related_files": ["github-runner/scripts/prepare_runner.py:141-148"],
+      "recommended_direction": "One-line help= per flag stating meaning and precondition, with descriptive metavars.",
+      "acceptance_check": null
+    },
+    {
+      "id": "U9",
+      "severity": "Medium",
+      "evidence": "CONFIRMED",
+      "issue": "The rendered service-plan.txt bakes the local staging path into the plutil -lint and privileged 'sudo install' lines; when rendered off-target (the documented fallback when the target lacks Python) the operator must hand-edit a sudo line in a 0600 review artifact.",
+      "scenario": "Rendered on the workstation; the plan reads 'sudo /usr/bin/install -o root -g wheel -m 0644 /private/var/folders/.../org.example.widget-ci.plist /Library/LaunchDaemons/...'. On the target that path does not exist; platforms.md:54 tells the operator to edit the plan.",
+      "file": "github-runner/scripts/macos_service.py",
+      "line_start": 65,
+      "line_end": 78,
+      "related_files": ["github-runner/references/platforms.md:54"],
+      "recommended_direction": "Accept --target-staging-dir (default --output-dir) and render target paths, or emit a STAGED_PLIST=... placeholder referenced by both commands.",
+      "acceptance_check": null
+    },
+    {
+      "id": "U10",
+      "severity": "Medium",
+      "evidence": "PLAUSIBLE",
+      "issue": "On the first candidate, when the helper is not yet on the default branch and RUNNER_SELECTOR_SHA is unset, the select job dies with Python's \"can't open file ... No such file or directory\" instead of naming the bootstrap prerequisite described in ci.md:7.",
+      "scenario": "Operator adds helper and workflow on a feature branch and pushes; sparse checkout from the default branch yields no file; 'python3 .github/scripts/select_runner.py' fails with an interpreter error. Not reproduced on Actions (workflow dispatch is BLOCKED); outcome follows from the checkout inputs.",
+      "file": "github-runner/assets/ci.yml",
+      "line_start": 25,
+      "line_end": 43,
+      "related_files": ["github-runner/references/ci.md:7"],
+      "recommended_direction": "Add a guard step before 'route': test -f .github/scripts/select_runner.py || { echo \"::error::select_runner.py is not on the trusted ref (default branch or RUNNER_SELECTOR_SHA); see references/ci.md\"; exit 1; }",
+      "acceptance_check": null
+    },
+    {
+      "id": "U11",
+      "severity": "Medium",
+      "evidence": "CONFIRMED",
+      "issue": "After an interrupted extraction, the rerun refusal ('Instance already exists; inspect it before resuming') and inspect's 'status: incomplete' state no recovery path; there is no resume, and setup.md:26 forbids 'cleanup or overwrite' without saying what a resume plan is.",
+      "scenario": "Extraction interrupted; rerun refused; inspect shows incomplete with no progress fields; the operator cannot tell whether to delete the directory (the only working path when no .runner exists) and the tool has told them to preserve it.",
+      "file": "github-runner/scripts/prepare_runner.py",
+      "line_start": 50,
+      "line_end": 135,
+      "related_files": ["github-runner/references/setup.md:26"],
+      "recommended_direction": "Have inspect print a next_action for incomplete receipts (no registration: remove directory and rerun prepare; registration present: stop) and have the rerun refusal say the same.",
+      "acceptance_check": null
+    },
+    {
+      "id": "U12",
+      "severity": "Low",
+      "evidence": "CONFIRMED",
+      "issue": "The runtime account is --expected-user in prepare_runner.py, --account in macos_service.py, UserName in the plist and $RUNNER_ACCOUNT in docs; 'label' means routing label in SKILL.md:12, launchd label in macos_service.py --label, and platform labels in RUNNER_LABELS.",
+      "scenario": "Operator who chose the 'unique label' per SKILL.md passes it to the renderer's undocumented --label; it validates and names the LaunchDaemon after the routing label, which works but confuses every later launchctl discussion.",
+      "file": "github-runner/scripts/macos_service.py",
+      "line_start": 20,
+      "line_end": 31,
+      "related_files": ["github-runner/scripts/prepare_runner.py:145", "github-runner/SKILL.md:12", "github-runner/references/setup.md:23", "github-runner/references/platforms.md:52"],
+      "recommended_direction": "Use --runtime-account on both helpers (keep old names as aliases) and --launchd-label with a REVERSE_DNS_LABEL metavar on the renderer.",
+      "acceptance_check": null
+    },
+    {
+      "id": "U13",
+      "severity": "Low",
+      "evidence": "CONFIRMED",
+      "issue": "remote_command.py rejects 'admin@host' without pointing at --admin-account, and rejects 'host:2222' as 'Use a valid IP address' because any colon routes to the IPv6 branch.",
+      "scenario": "SSH habits (user@host, host:port) each cost a retry with a message that names the wrong cause; --help does say 'no user@ prefix' but the error does not.",
+      "file": "github-runner/scripts/remote_command.py",
+      "line_start": 16,
+      "line_end": 24,
+      "recommended_direction": "Detect '@' and ':port' explicitly and say where the user part goes and that ports need an SSH config alias.",
+      "acceptance_check": null
+    }
+  ],
+  "blocked_checks": [
+    "npx skills add . --list (repo root); npx skills add diegomarino/my-skills --skill github-runner",
+    "./config.sh --url https://github.com/<owner>/<repo> --name <name> --labels <custom> as the runtime account on a disposable host",
+    "sudo /bin/launchctl bootstrap system /Library/LaunchDaemons/<label>.plist; sudo /bin/launchctl print system/<label>",
+    "sudo ./svc.sh install <account> && sudo ./svc.sh status (Linux systemd)",
+    "run the ssh -t -l ... line printed by remote_command.py against a disposable host",
+    "gh workflow run \"Preferred runner CI\" --ref <candidate> (and with -f force_hosted=true); gh run view <id> --log",
+    "prepare_runner.py prepare on a Windows host (ctypes GetUserNameW path)"
+  ]
+}

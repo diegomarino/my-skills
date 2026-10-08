@@ -1,0 +1,97 @@
+{
+  "audit": "process",
+  "snapshot": {
+    "sha": "8d6598de262ea3bef0f947c30aa747d5c8ea7263",
+    "dirty": true,
+    "branch": "feat/github-runner",
+    "readme_diff_sha256": "21779ad43faa6e44eb4aec8d789646116f95a28dbd633aaeb0f32c778cb23502",
+    "scope": "github-runner/** (19 untracked files) plus root README.md diff vs HEAD",
+    "model": "claude-fable-5-1"
+  },
+  "findings": [
+    {
+      "id": "P1",
+      "severity": "Medium",
+      "evidence": "PLAUSIBLE",
+      "issue": "Concurrency group keyed on workflow+ref with cancel-in-progress: true, while on: push also fires on the candidate push; the documented acceptance (dispatch preferred and force_hosted on the same final candidate) self-cancels unless serialized, and no doc says to wait.",
+      "scenario": "Agent pushes the final candidate (push-triggered run starts), then runs `gh workflow run \"Preferred runner CI\" --ref <candidate>` and `gh workflow run \"Preferred runner CI\" --ref <candidate> -f force_hosted=true`; each new run cancels the in-flight one and the preferred-host run ends `cancelled`, so the acceptance evidence is lost and the agent may start diagnosing the host.",
+      "file": "github-runner/assets/ci.yml",
+      "line_start": 14,
+      "line_end": 16,
+      "recommended_direction": "Key the concurrency group by mode (e.g. append `-${{ inputs.force_hosted || 'auto' }}`) or set `cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}`; add to references/ci.md Acceptance: wait for the first run's terminal conclusion before dispatching the second mode on the same ref.",
+      "acceptance_check": "On a throwaway repo: `gh workflow run \"Preferred runner CI\" --ref <candidate>; gh workflow run \"Preferred runner CI\" --ref <candidate> -f force_hosted=true; sleep 60; gh run list --workflow \"Preferred runner CI\" --branch <candidate> --json conclusion,event` shows no `cancelled` conclusion once fixed (today one run is cancelled)."
+    },
+    {
+      "id": "P2",
+      "severity": "Medium",
+      "evidence": "CONFIRMED",
+      "issue": "Every selector misconfiguration (RUNNER_LABELS missing architecture, PREFERRED_RUNNER_LABEL typo, expired RUNNER_READ_TOKEN, TRUSTED_RUNNER_REF mismatch) yields output byte-identical to a busy runner: `runner=\"<hosted>\"`, rc 0, empty stderr, no reason.",
+      "scenario": "Operator misconfigures one variable or the PAT expires; CI stays green on ubuntu-24.04 for weeks while the self-hosted Mac idles; an agent asked why the preferred host is unused gets identical selector bytes for busy, misconfigured, 401 and untrusted-ref cases and cannot branch on it.",
+      "file": "github-runner/scripts/select_runner.py",
+      "line_start": 57,
+      "line_end": 102,
+      "recommended_direction": "Emit a non-secret `reason=<enum>` (forced, untrusted-event, config-missing:<VAR>, platform-labels-invalid, api-error, no-unique-match, not-idle, labels-missing, ok) to GITHUB_OUTPUT plus a `::notice::` line, never exception text; keep rc 0; add a selector test for the enum and require `reason=ok` on the preferred acceptance run in references/ci.md.",
+      "acceptance_check": "In-process: `select(env_with_RUNNER_LABELS='[\"Linux\"]', fetch_ok)` and `select(env, fetch_busy)` currently both return 'ubuntu-24.04' with no distinguishing output; after the fix the CLI prints distinct `reason=platform-labels-invalid` vs `reason=not-idle` lines to GITHUB_OUTPUT."
+    },
+    {
+      "id": "P3",
+      "severity": "Medium",
+      "evidence": "CONFIRMED",
+      "issue": "After an interrupted extraction the receipt says `status: incomplete`; re-running the documented prepare command is refused (rc 1 \"Instance already exists; inspect it before resuming\"), inspect only reports it, and no command or documented sequence moves incomplete to prepared (setup.md forbids 'broad cleanup or overwrite' without saying what to do).",
+      "scenario": "The runtime account's SSH session drops mid-extraction of the official archive; the operator reruns the exact setup.md command and is refused; the only way forward is to hand-delete the helper-reserved directory, which the doc discourages, so a cautious agent stops at step 2 of a fresh install.",
+      "file": "github-runner/scripts/prepare_runner.py",
+      "line_start": 50,
+      "line_end": 51,
+      "recommended_direction": "Either document the recovery in references/setup.md (if inspect shows incomplete and no .runner/.credentials exist: `rm -r -- \"$INSTANCE_DIR\"` then rerun prepare) or add `prepare --resume-incomplete` that re-verifies the digest, requires receipt status incomplete and no registration files, re-extracts inside the reserved directory only, and rewrites the receipt to prepared; add a test for the chosen path.",
+      "acceptance_check": "Reproduce with the SIGKILL fixture (patch shutil.copyfileobj to os._exit(137) on the 50th call, run prepare); then the documented recovery sequence (new flag or documented rm + rerun) must end with `prepare_runner.py inspect --directory <dir>` printing \"status\": \"prepared\" and rc 0; today no documented sequence does."
+    },
+    {
+      "id": "P4",
+      "severity": "Low",
+      "evidence": "CONFIRMED",
+      "issue": ".preparation.json carries no schema/version stamp and inspect performs no version check or migration.",
+      "scenario": "A later helper release adds or renames receipt fields; inspecting a directory prepared by the older helper prints nulls with no indication the receipt predates the format, and the older helper silently drops newer fields.",
+      "file": "github-runner/scripts/prepare_runner.py",
+      "line_start": 96,
+      "line_end": 99,
+      "recommended_direction": "Add \"format\": 1 to the receipt; have inspect report it and refuse with a named message (rc 1) when the format is newer than supported.",
+      "acceptance_check": null
+    },
+    {
+      "id": "P5",
+      "severity": "Low",
+      "evidence": "CONFIRMED",
+      "issue": "Exit-code contract differs per helper: prepare_runner.py refusals exit 1 / usage 2; macos_service.py and remote_command.py exit 2 for both guard refusals and usage errors; select_runner.py exits 1 for both a missing HOSTED_RUNNER and a missing GITHUB_OUTPUT, and the latter message ('Invalid selector output path') does not name the variable.",
+      "scenario": "An agent wrapping the helpers cannot distinguish 'fix my command line' from 'guard refused, stop and report' for macos_service.py/remote_command.py; a local selector dry-run outside Actions fails with a message that does not say to set GITHUB_OUTPUT.",
+      "file": "github-runner/scripts/macos_service.py",
+      "line_start": 100,
+      "line_end": 101,
+      "recommended_direction": "Adopt one contract across helpers (2 usage, 1 guard refusal, 0 done) and change the selector message to name GITHUB_OUTPUT and how to set it for a local dry-run.",
+      "acceptance_check": null
+    },
+    {
+      "id": "P6",
+      "severity": "Low",
+      "evidence": "CONFIRMED",
+      "issue": "README 'Checks' tells contributors to run the skill-creator scripts/quick_validate.py and actionlint, but gives no location for the validator, omits its PyYAML dependency (fails with ModuleNotFoundError: No module named 'yaml' on all local interpreters), and has no install pointer for actionlint.",
+      "scenario": "A contributor on a fresh macOS follows the Checks section; the format check is not in the repo and the plugin copy crashes on `import yaml`; they cannot complete the documented pre-publish checks.",
+      "file": "github-runner/README.md",
+      "line_start": 47,
+      "line_end": 52,
+      "recommended_direction": "State the validator's location and dependency (e.g. `uv run --with pyyaml <skill-creator>/scripts/quick_validate.py github-runner`) or drop the reference; add `brew install actionlint` (or the release URL); add `-B`/PYTHONDONTWRITEBYTECODE=1 to the py_compile/unittest lines so __pycache__ is not written into the skill folder.",
+      "acceptance_check": null
+    },
+    {
+      "id": "P7",
+      "severity": "Low",
+      "evidence": "CONFIRMED",
+      "issue": "Refusal messages name the wrong condition: a macOS /tmp alias or relative --directory is refused as 'Use an absolute resolved directory without symlinks' with no hint to resolve the alias (only platforms.md warns, and only for macos_service.py); a wrong --expected-user is refused as 'Run as the verified standard runtime account, not root'.",
+      "scenario": "On macOS the operator stages under /tmp/runner-task as the docs' 'private task staging directory' and is told about symlinks they never typed; a mistyped --expected-user is reported as a root problem, sending the operator to check sudo instead of the account name.",
+      "file": "github-runner/scripts/prepare_runner.py",
+      "line_start": 28,
+      "line_end": 47,
+      "recommended_direction": "Include the resolved path in the message ('/tmp/x resolves to /private/tmp/x; pass the resolved path'), split the account guard into separate 'expected-user mismatch' and 'running as root' messages, and add the alias note to references/setup.md and verification.md.",
+      "acceptance_check": null
+    }
+  ]
+}
