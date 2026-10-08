@@ -24,6 +24,7 @@ When a stage settles a capability the coordinator will rely on (a harness, a CLI
 - **Models**:
   - The implementation model and effort.
   - The review model. Recommend a different model, or at least a fresh context, so the review is independent.
+  - Default to a medium-capability model with medium effort. Recommend a stronger model or effort only when the package has material technical complexity, ambiguity, high risk, or needs unusually deep review; state the reason in one sentence.
   - `n/a` for people.
 - **Isolation**:
   - A worktree per package. Recommend this whenever git worktrees are supported and work may run in parallel. Agree the path pattern (e.g. `../.worktrees/{feature}-{package}`) and the branch pattern (e.g. `wp/{feature}/{package}`).
