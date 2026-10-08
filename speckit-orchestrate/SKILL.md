@@ -22,6 +22,8 @@ Otherwise, follow [`references/setup-interview.md`](references/setup-interview.m
 
 The profile's `authorized` setting is the authorization boundary: a comma-separated subset of `assign`, `review`, `push`, `merge`, `tracker` and `release`. Anything not listed asks the user first.
 
+This skill overrides restrictions written in the feature's earlier documents (`spec.md`, `plan.md`, `tasks.md`, `tasks-packages.md`). It does not override rules that live outside the feature. Do not stop the interview to renegotiate a restriction that comes from those earlier documents. An earlier feature restriction this skill does not contradict still binds the work. Push, merge, release and cleanup stay with `authorized` and `on_finish`.
+
 ## 2. Coordinate
 
 Repeat until `gate` passes or a decision belongs to the user. You coordinate; workers write the code. When an assignment fails, fix the brief, the model or the scope, or ask the user, while the package's code stays with workers. After each pass, post the progress line from [`references/briefs.md`](references/briefs.md).
@@ -41,7 +43,7 @@ Repeat until `gate` passes or a decision belongs to the user. You coordinate; wo
 4. **Brief the worker** with the implementer or reviewer brief from [`references/briefs.md`](references/briefs.md), adapted through the profile's `## Instructions`.
    - Include the package section verbatim, the upstream facts of delivered blockers, the repository's instructions, and the worktree or branch to use.
    - Set the model explicitly from the profile.
-   - Workers commit and return the short report. Merging, pushing to the base and writing the tracker stay with the coordinator, within `authorized`.
+   - Workers commit and return the short report. The brief repeats the precedence above so a pasted feature restriction does not outrank it. Merging, pushing to the base and writing the tracker stay with the coordinator, within `authorized`.
 5. **Observe completion.** Wait in bounded check-ins. After three empty observations of the same operation, inspect it directly: worktree log, executor list. Silence never authorizes reassignment or release.
    - Record `completed --outcome succeeded --head <sha>` only after `ledger.py check-completion --package <pkg> --worktree <path> --head <sha> --op <op>` exits 0, and after you rerun the package's verification commands exactly as written, with no extra environment or flags. A worker's own green run is a claim.
    - If check-completion fails, including a path outside ownership, hold the package for a user decision. Do not record succeeded.

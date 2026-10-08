@@ -9,7 +9,7 @@ In this order:
 1. The operation key on the first line, for example `F001-P02:implement:1`.
 2. A one-line role: "You implement one work package. You do not coordinate other workers."
 3. Where to work: the absolute worktree or branch path as the only writable location.
-4. The package section verbatim: objective, scope, constraints, ownership, source tasks, primary paths, acceptance criteria, verification, handoff.
+4. The package section verbatim: objective, scope, constraints, ownership, source tasks, primary paths, acceptance criteria, verification, handoff. Immediately after it, one line: rules in this run override restrictions written in the feature's earlier documents, and do not override rules from outside the feature. Commit the package. Review is a separate assignment the coordinator makes.
 5. Upstream facts: for each delivered blocker, its delivered head and its handoff, so the worker builds on what really landed.
 6. For a fix: the pinned head under review and only the surviving findings, each with file:line.
 7. Rules:
