@@ -1,0 +1,69 @@
+# Adapt into the project's existing CI; replace the failing checks step.
+name: Preferred runner CI
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      force_hosted:
+        description: Use the configured hosted fallback
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: preferred-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  select:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    outputs:
+      runner: ${{ steps.route.outputs.runner }}
+    steps:
+      # Never check out contribution code in the PAT-bearing selector job.
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ vars.RUNNER_SELECTOR_SHA || github.event.repository.default_branch }}
+          persist-credentials: false
+          sparse-checkout: .github/scripts/select_runner.py
+          sparse-checkout-cone-mode: false
+      - id: route
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_API_URL: ${{ github.api_url }}
+          GITHUB_REF: ${{ github.ref }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          TRUSTED_RUNNER_REF: ${{ vars.TRUSTED_RUNNER_REF }}
+          PREFERRED_RUNNER_NAME: ${{ vars.PREFERRED_RUNNER_NAME }}
+          PREFERRED_RUNNER_LABEL: ${{ vars.PREFERRED_RUNNER_LABEL }}
+          RUNNER_LABELS: ${{ vars.RUNNER_LABELS }}
+          # Required: choose a fallback compatible with the actual project checks.
+          HOSTED_RUNNER: ${{ vars.HOSTED_RUNNER }}
+          FORCE_HOSTED: ${{ inputs.force_hosted || false }}
+          TRUSTED_EVENT: ${{ vars.ENABLE_SELF_HOSTED == 'true' && github.event_name != 'pull_request' && vars.TRUSTED_RUNNER_REF != '' && github.ref == vars.TRUSTED_RUNNER_REF }}
+          RUNNER_READ_TOKEN: ${{ github.event_name != 'pull_request' && vars.ENABLE_SELF_HOSTED == 'true' && vars.TRUSTED_RUNNER_REF != '' && github.ref == vars.TRUSTED_RUNNER_REF && secrets.RUNNER_READ_TOKEN || '' }}
+        run: |
+          if [ ! -f .github/scripts/select_runner.py ]; then
+            echo 'Trusted selector missing: bootstrap .github/scripts/select_runner.py on the default branch or set RUNNER_SELECTOR_SHA to a reviewed commit containing it.' >&2
+            exit 1
+          fi
+          python3 .github/scripts/select_runner.py
+  checks:
+    needs: select
+    runs-on: ${{ fromJSON(needs.select.outputs.runner) }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Record execution machine
+        shell: bash
+        run: |
+          printf 'Runner: %s; OS: %s; architecture: %s\n' "$RUNNER_NAME" "$RUNNER_OS" "$RUNNER_ARCH"
+          git rev-parse HEAD
+      - name: Run the project's real checks
+        shell: bash
+        run: |
+          echo 'Replace this step with the existing build, test, and package checks.'
+          exit 1
