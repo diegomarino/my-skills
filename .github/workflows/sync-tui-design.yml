@@ -1,0 +1,68 @@
+name: Sync tui-design
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Import the current upstream payload
+        id: import
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote add tui-design https://github.com/diegomarino/tui-design.git
+          git fetch tui-design skill/tui-design
+          source_sha=$(git rev-parse tui-design/skill/tui-design)
+          branch="automation/sync-tui-design-${source_sha:0:12}"
+          if gh pr list --base main --head "$branch" --state open --json number --jq 'length' | grep -Eq '^[1-9][0-9]*$'; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if git ls-remote --exit-code origin "refs/heads/$branch" >/dev/null; then
+            echo "Refusing to overwrite existing branch without an open pull request: $branch" >&2
+            exit 1
+          fi
+          git switch -c "$branch"
+          base=$(git rev-parse HEAD)
+          git subtree pull --prefix=tui-design tui-design skill/tui-design --squash
+          if [ "$(git rev-parse HEAD)" = "$base" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          check_dir=$(mktemp -d)
+          python3 tui-design/scripts/render_mockup.py tui-design/assets/demo/fleet--normal--80x24.mock --check
+          python3 tui-design/scripts/render_mockup.py tui-design/assets/demo/fleet--normal--80x24.mock -o "$check_dir/fleet.ansi"
+          python3 tui-design/scripts/ansi_render.py "$check_dir/fleet.ansi" --format svg -o "$check_dir/fleet.svg"
+          python3 tui-design/scripts/gallery.py tui-design/assets/demo --themes catppuccin-mocha -o "$check_dir/gallery.html"
+          python3 tui-design/scripts/export_theme.py catppuccin-mocha --target json -o "$check_dir/theme.json"
+          python3 tui-design/scripts/contrast_check.py catppuccin-mocha
+          python3 tui-design/scripts/contrast_check.py catppuccin-mocha --depth 16
+          test -s "$check_dir/fleet.svg"
+          test -s "$check_dir/gallery.html"
+          test -s "$check_dir/theme.json"
+          git push --set-upstream origin "$branch"
+          body_file=$(mktemp)
+          printf 'Source branch: skill/tui-design\nSource commit: %s\n\nValidated: mockup lint, ANSI/SVG render, HTML gallery, JSON theme export, and contrast at truecolor and 16 colors.\n' "$source_sha" > "$body_file"
+          gh pr create \
+            --base main \
+            --head "$branch" \
+            --title "sync: tui-design ${source_sha:0:12}" \
+            --body-file "$body_file"
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+      - name: Report no change
+        if: steps.import.outputs.changed == 'false'
+        run: echo "tui-design is already current"

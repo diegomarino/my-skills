@@ -30,6 +30,8 @@ npx skills add diegomarino/my-skills@tui-design
 
 The two Spec Kit skills work independently. When both are installed, `speckit-orchestrate` also runs the package validator.
 
+`tui-design/` is generated from [`diegomarino/tui-design`](https://github.com/diegomarino/tui-design). Make changes there; this repository accepts updates only through its synchronization pull requests.
+
 ## Checks
 
 Every skill ships its tests:
