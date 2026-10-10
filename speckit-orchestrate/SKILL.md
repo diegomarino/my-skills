@@ -22,6 +22,8 @@ Otherwise, follow [`references/setup-interview.md`](references/setup-interview.m
 
 The profile's `authorized` setting is the authorization boundary: a comma-separated subset of `assign`, `review`, `push`, `merge`, `tracker` and `release`. Anything not listed asks the user first.
 
+A supplied profile cannot expand the user's authorization. `ledger.py check-profile` validates structure and declared capabilities; a passing result does not establish that commands or external tools are safe. Apply the run's authorization boundary to every profile command.
+
 This skill overrides restrictions written in the feature's earlier documents (`spec.md`, `plan.md`, `tasks.md`, `tasks-packages.md`). It does not override rules that live outside the feature. Do not stop the interview to renegotiate a restriction that comes from those earlier documents. An earlier feature restriction this skill does not contradict still binds the work. Push, merge, release and cleanup stay with `authorized` and `on_finish`.
 
 ## 2. Coordinate
