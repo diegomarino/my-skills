@@ -39,6 +39,55 @@ class SelectorTests(unittest.TestCase):
             return pages[len(self.requests) - 1]
         return selector.select(env, fetch, self.reasons.append)
 
+    def test_required_local_skips_availability_and_credentials(self):
+        for failure in [RuntimeError('offline'), ValueError('lookup failed'), None]:
+            with self.subTest(failure=failure):
+                self.assertEqual(self.select(failure, REQUIRE_SELF_HOSTED='true',
+                                             RUNNER_READ_TOKEN=''),
+                                 ['self-hosted', 'repo-ci', 'Linux', 'X64'])
+                self.assertEqual(self.requests, [])
+                self.assertEqual(self.reasons, ['required-local'])
+        for state in [runner(busy=True), runner(status='offline')]:
+            self.assertIsInstance(self.select([{'total_count': 1, 'runners': [state]}],
+                                             REQUIRE_SELF_HOSTED='true'), list)
+            self.assertEqual(self.requests, [])
+
+    def test_required_local_configuration_errors(self):
+        for changes in [dict(PREFERRED_RUNNER_LABEL=''), dict(PREFERRED_RUNNER_NAME=''),
+                        dict(RUNNER_LABELS=''), dict(RUNNER_LABELS='["Linux"]'),
+                        dict(PREFERRED_RUNNER_LABEL='self-hosted'),
+                        dict(TRUSTED_RUNNER_REF=''), dict(TRUSTED_EVENT='false')]:
+            with self.subTest(changes=changes):
+                with self.assertRaisesRegex(ValueError, 'Required self-hosted routing:'):
+                    self.select([], REQUIRE_SELF_HOSTED='true', **changes)
+                self.assertEqual(self.requests, [])
+
+    def test_required_local_preserves_trust_and_manual_override(self):
+        for changes in [dict(GITHUB_EVENT_NAME='pull_request'),
+                        dict(GITHUB_EVENT_NAME='pull_request_target'),
+                        dict(GITHUB_EVENT_NAME='schedule'),
+                        dict(GITHUB_REF='refs/heads/MAIN')]:
+            with self.subTest(changes=changes):
+                self.assertEqual(self.select([], REQUIRE_SELF_HOSTED='true', **changes),
+                                 'ubuntu-24.04')
+                self.assertEqual(self.requests, [])
+        self.assertEqual(self.select([], REQUIRE_SELF_HOSTED='true', FORCE_HOSTED='true',
+                                     GITHUB_EVENT_NAME='workflow_dispatch', RUNNER_LABELS=''),
+                         'ubuntu-24.04')
+        self.assertEqual(self.requests, [])
+
+    def test_hosted_override_requires_manual_dispatch(self):
+        self.assertIsInstance(self.select([], REQUIRE_SELF_HOSTED='true', FORCE_HOSTED='true'), list)
+        self.assertEqual(self.requests, [])
+        self.assertEqual(self.reasons, ['required-local'])
+
+    def test_invalid_routing_policy_fails_closed(self):
+        for value in ['TRUE', 'yes', 'tru', '0']:
+            with self.subTest(value=value):
+                with self.assertRaisesRegex(ValueError, 'REQUIRE_SELF_HOSTED'):
+                    self.select([], REQUIRE_SELF_HOSTED=value)
+                self.assertEqual(self.requests, [])
+
     def test_online_idle(self):
         self.assertEqual(self.select([{'total_count': 1, 'runners': [runner()]}]),
                          ['self-hosted', 'repo-ci', 'Linux', 'X64'])
@@ -73,7 +122,7 @@ class SelectorTests(unittest.TestCase):
                 self.assertEqual(len(self.requests), 1)
 
     def test_skips_api(self):
-        for changes in [dict(FORCE_HOSTED='true'), dict(TRUSTED_EVENT='false'),
+        for changes in [dict(FORCE_HOSTED='true', GITHUB_EVENT_NAME='workflow_dispatch'), dict(TRUSTED_EVENT='false'),
                         dict(TRUSTED_EVENT=''), dict(RUNNER_READ_TOKEN=''),
                         dict(GITHUB_REF='refs/heads/MAIN'), dict(TRUSTED_RUNNER_REF=''),
                         dict(GITHUB_EVENT_NAME='pull_request'), dict(GITHUB_EVENT_NAME='schedule'),
@@ -106,7 +155,8 @@ class SelectorTests(unittest.TestCase):
     def test_verified_standard_fallbacks(self):
         for label in ['ubuntu-24.04-arm', 'windows-2025', 'macos-15-intel']:
             with self.subTest(label=label):
-                self.assertEqual(self.select([], HOSTED_RUNNER=label, FORCE_HOSTED='true'), label)
+                self.assertEqual(self.select([], HOSTED_RUNNER=label, FORCE_HOSTED='true',
+                                             GITHUB_EVENT_NAME='workflow_dispatch'), label)
                 self.assertEqual(self.requests, [])
 
     def test_api_error_and_custom_fallback(self):
@@ -115,7 +165,7 @@ class SelectorTests(unittest.TestCase):
         self.assertEqual(self.reasons, ['api-error'])
 
     def test_safe_fallback_reasons(self):
-        for changes, reason in [(dict(FORCE_HOSTED='true'), 'forced'),
+        for changes, reason in [(dict(FORCE_HOSTED='true', GITHUB_EVENT_NAME='workflow_dispatch'), 'forced'),
                                 (dict(RUNNER_READ_TOKEN=''), 'missing-config:RUNNER_READ_TOKEN'),
                                 (dict(RUNNER_LABELS='secret invalid JSON'), 'invalid-platform-labels'),
                                 (dict(GITHUB_REF='refs/heads/MAIN'), 'untrusted-ref')]:
@@ -186,6 +236,20 @@ class SelectorTests(unittest.TestCase):
                         selector.fetch_page('https://api.github.com/test', 'secret', 5)
         self.assertIsNone(selector.NoRedirect().redirect_request(None, None, 302, '', {},
                                                                   'https://attacker.invalid'))
+
+    def test_required_local_cli_error_has_no_routing_output(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / 'out'
+            result = subprocess.run([sys.executable, str(PATH)], env={
+                'GITHUB_OUTPUT': str(output), 'HOSTED_RUNNER': 'ubuntu-24.04',
+                'REQUIRE_SELF_HOSTED': 'true', 'GITHUB_EVENT_NAME': 'push',
+                'GITHUB_REF': 'refs/heads/main', 'TRUSTED_RUNNER_REF': 'refs/heads/main',
+                'TRUSTED_EVENT': 'true'}, capture_output=True, text=True)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn('missing-config:PREFERRED_RUNNER_NAME', result.stderr)
+            self.assertIn('force_hosted=true', result.stderr)
+            self.assertEqual(result.stdout, '')
+            self.assertFalse(output.exists())
 
     def test_output_json(self):
         with tempfile.TemporaryDirectory() as directory:

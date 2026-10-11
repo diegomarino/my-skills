@@ -1,6 +1,6 @@
 # setup-github-runner
 
-Agent skill for checking a repository's self-hosted runners and carrying a user-selected local or remote macOS/Linux host from an empty starting point through account preparation, registration, persistent services and verified project CI with preferred-runner/hosted routing.
+Agent skill for checking a repository's self-hosted runners and carrying a user-selected local or remote macOS/Linux host from an empty starting point through account preparation, registration, persistent services and verified project CI with required-local or preferred-runner/hosted routing.
 
 ## Install
 
@@ -26,6 +26,8 @@ Invoke `$setup-github-runner` explicitly in Codex or `/setup-github-runner` in [
 
 Diagnosis is read-only. Configuration follows the user's authorized scope; skill development never installs a live runner. The runtime account is dedicated and standard, distinct from the personal/admin account. Tokens stay in private local input or a secret-safe mechanism.
 
+Before integrating CI, the skill offers required-local queueing (`REQUIRE_SELF_HOSTED=true`) or automatic hosted fallback (`false`), unless the user already chose. It presents the discovered labels, compatible hosted choice and trust/configuration inputs in [CI](references/ci.md#choose-the-routing-policy). Required-local uses no discovery PAT; `force_hosted` remains a manual boolean, default false. Untrusted PRs remain hosted, and local outages can keep CI queued until GitHub's queue timeout.
+
 ## Resources
 
 | Resource | When to use |
@@ -41,7 +43,7 @@ Diagnosis is read-only. Configuration follows the user's authorized scope; skill
 | [remote_command.py](scripts/remote_command.py) | Render a quoted SSH invocation for a transferred privileged script |
 | [select_runner.py](scripts/select_runner.py), [ci.yml](assets/ci.yml) | Copy/adapt the hosted selector and workflow into a target repository |
 
-Helpers use Python 3.9+ and the standard library; discover/provision missing Python before use. Run them with `python3`, not by executable bits. Supported self-hosted targets are macOS and Linux; Windows host installation is outside scope. macOS data rendering and archive fixtures are tested locally; real account/service installation on Linux and macOS remains platform-specific live acceptance. The bundled selector supports github.com; GHES requires a reviewed adapter. The workflow deliberately fails until its project checks are supplied and requires explicit compatible `HOSTED_RUNNER` configuration.
+Helpers use Python 3.9+ and the standard library; discover/provision missing Python before use. Run them with `python3`, not by executable bits. Supported self-hosted targets are macOS and Linux; Windows host installation is outside scope. macOS data rendering and archive fixtures are tested locally; real account/service installation on Linux and macOS remains platform-specific live acceptance. Availability lookup supports github.com; GHES lookup requires a reviewed adapter. Required-local label routing makes no API request. The workflow deliberately fails until its project checks are supplied and requires explicit compatible `HOSTED_RUNNER` configuration.
 
 ## Helper interface
 
@@ -53,7 +55,7 @@ Use `prepare_runner.py prepare --help`, `prepare_runner.py inspect --help`, `mac
 | Inspection | JSON with directory/existence, safe registration identity and preparation fields; absent state is `null` | Nonzero exit for unsafe or malformed state; it never reads `.credentials` |
 | macOS rendering | Paths of the new plist and manual command plan; no service activation | Nonzero exit for invalid inputs or existing artifacts |
 | Remote command | One quoted SSH command; no connection or execution | Nonzero exit for invalid arguments |
-| Selector | `runner=<JSON>` appended to `GITHUB_OUTPUT`, matching stdout; non-secret reason on stderr | Hosted fallback is successful routing; invalid fallback/output setup exits nonzero. See [inputs and reasons](references/ci.md). |
+| Selector | `runner=<JSON>` appended to `GITHUB_OUTPUT`, matching stdout; non-secret reason on stderr | Hosted routing succeeds when policy/trust/manual override permits it; required-local configuration errors and invalid hosted/output setup exit nonzero. See [inputs and reasons](references/ci.md). |
 
 ## Checks
 

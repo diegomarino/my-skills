@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Select a verified idle runner, or a hosted label; no third-party dependencies."""
+"""Select required-local or preferred/hosted routing; no third-party dependencies."""
 import json
 import os
 import re
@@ -66,6 +66,17 @@ def select(env, fetch=fetch_page, report=None):
     if fallback not in HOSTED_LABELS:
         raise ValueError('Invalid HOSTED_RUNNER ' + json.dumps(fallback, ensure_ascii=True)
                          + '; choose one of: ' + ', '.join(sorted(HOSTED_LABELS)))
+    policy = env.get('REQUIRE_SELF_HOSTED', '')
+    if policy not in {'', 'false', 'true'}:
+        raise ValueError('Invalid REQUIRE_SELF_HOSTED; choose true (queue locally) or false (allow fallback)')
+    require_local = policy == 'true'
+    def local_error(reason):
+        raise ValueError('Required self-hosted routing: ' + reason
+                         + '; fix the named configuration or use workflow_dispatch force_hosted=true')
+    def unavailable(reason):
+        if require_local:
+            local_error(reason)
+        return hosted(reason)
     def hosted(reason):
         report(reason)
         return fallback
@@ -73,35 +84,45 @@ def select(env, fetch=fetch_page, report=None):
     label = env.get('PREFERRED_RUNNER_LABEL', '')
     token = env.get('RUNNER_READ_TOKEN', '')
     repo = env.get('GITHUB_REPOSITORY', '')
-    if env.get('FORCE_HOSTED') == 'true':
+    if env.get('FORCE_HOSTED') == 'true' and env.get('GITHUB_EVENT_NAME') == 'workflow_dispatch':
         return hosted('forced')
-    if (env.get('TRUSTED_EVENT') != 'true'
-            or env.get('GITHUB_EVENT_NAME') not in {'push', 'workflow_dispatch'}):
+    if env.get('GITHUB_EVENT_NAME') not in {'push', 'workflow_dispatch'}:
+        return hosted('untrusted-event')
+    if require_local and not env.get('TRUSTED_RUNNER_REF'):
+        local_error('missing-config:TRUSTED_RUNNER_REF')
+    if env.get('TRUSTED_EVENT') != 'true':
+        if require_local and env.get('GITHUB_REF') == env.get('TRUSTED_RUNNER_REF'):
+            local_error('ENABLE_SELF_HOSTED must be true for the authorized ref')
         return hosted('untrusted-event')
     # GitHub expression equality ignores case; enforce the authorization boundary here.
     if not env.get('TRUSTED_RUNNER_REF') or env.get('GITHUB_REF') != env['TRUSTED_RUNNER_REF']:
         return hosted('untrusted-ref')
-    for variable in ['PREFERRED_RUNNER_NAME', 'PREFERRED_RUNNER_LABEL', 'RUNNER_READ_TOKEN']:
+    for variable in ['PREFERRED_RUNNER_NAME', 'PREFERRED_RUNNER_LABEL']:
         if not env.get(variable):
-            return hosted('missing-config:' + variable)
+            return unavailable('missing-config:' + variable)
     if (not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]{0,99}', label)
             or label.casefold() in {'self-hosted', 'linux', 'macos', 'windows', 'x64', 'arm', 'arm64'}):
-        return hosted('invalid-routing-label')
+        return unavailable('invalid-routing-label')
+    try:
+        platform = json.loads(env.get('RUNNER_LABELS', ''))
+    except (ValueError, TypeError):
+        platform = None
+    if (not isinstance(platform, list) or not all(isinstance(x, str) and x for x in platform)
+                or not {'linux', 'macos'} & {x.casefold() for x in platform}
+                or not {'x64', 'arm64', 'arm'} & {x.casefold() for x in platform}):
+        return unavailable('invalid-platform-labels')
+    required = list(dict.fromkeys(['self-hosted', label] + platform))
+    if require_local:
+        report('required-local')
+        return required
+    if not token:
+        return hosted('missing-config:RUNNER_READ_TOKEN')
     if (not re.fullmatch(r'[A-Za-z0-9_-]+/[A-Za-z0-9_.-]+', repo)
             or repo.split('/')[1] in {'.', '..'}):
         return hosted('invalid-repository')
     if env.get('GITHUB_API_URL', 'https://api.github.com') != 'https://api.github.com':
         return hosted('unsupported-api')
     try:
-        platform = json.loads(env.get('RUNNER_LABELS', ''))
-        if (not isinstance(platform, list) or not all(isinstance(x, str) and x for x in platform)
-                or not {'linux', 'macos'} & {x.casefold() for x in platform}
-                or not {'x64', 'arm64', 'arm'} & {x.casefold() for x in platform}):
-            return hosted('invalid-platform-labels')
-    except (ValueError, TypeError):
-        return hosted('invalid-platform-labels')
-    try:
-        required = list(dict.fromkeys(['self-hosted', label] + platform))
         runners = []
         total = None
         for page in range(1, 11):

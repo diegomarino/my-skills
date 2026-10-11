@@ -80,3 +80,13 @@ The skill is now named `setup-github-runner`; earlier evaluation and audit recor
 Preparation success/error-path fixtures mock a standard runtime account, effective UID and the parent ownership lookup. They exercise the CLI entry point in-process so these mocks apply even when the test process is root; the dedicated root-refusal and wrong-account/parent tests override those mocks and remain enforced. OS account lookup is tested independently from USER/LOGNAME. Inspection still runs through subprocesses.
 
 The review regression reproduced four failures and one error under simulated root before this test-only change. All 35 helper tests then passed on macOS and in an isolated Linux container running as UID 0, with no network and the skill mounted read-only. This is helper-test acceptance, not live runner/service deployment.
+
+## Routing policy choice — 2026-10-11
+
+Request: explicitly adapt an existing trusted CI to reduce hosted usage, offering required-local queueing versus automatic fallback and presenting the required configuration inputs. Busy/offline runners and missing/failed lookup credentials must not silently use hosted when required-local is chosen. Preserve fork/untrusted protections and support manual `force_hosted` only.
+
+Independent baseline evaluation reproduced hosted routing for busy, offline, missing-token and lookup-error fixtures, with no policy choice. Updated independent evaluation passed: the skill offers both policies, honors a stated choice, presents inputs, scopes routing-only work away from host setup, and retains reviewed PR trust boundaries. The template keeps PRs hosted; project-specific trusted internal PR routing needs deliberate adaptation and its own regression coverage.
+
+Executable regressions cover native-label routing with zero API calls for unavailable runners/credentials, strict configuration errors with no CLI routing output, invalid policy, manual dispatch override, rejected push override, exact-ref and untrusted-event protections, and unchanged automatic fallback. Local validation: 41 runner, 59 package-task and 40 orchestration tests passed; actionlint and diff whitespace checks passed. The independent behavioral pass ran before the final CLI-output regression was added (40 runner tests).
+
+These checks do not prove live queue behavior, label uniqueness, registration/service health or target-repository CI acceptance. No push, merge, activation, host modification or live dispatch was performed.
