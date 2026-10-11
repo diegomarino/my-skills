@@ -30,6 +30,16 @@ Request: install from zero on a remote Debian x64 laptop with systemd, a dedicat
 
 Pass: explicitly prepare connectivity/account/tool prerequisites, separate credentials, use bundled preparation/service/selector resources, adapt real project checks, address laptop power state, and arrange an authorized default-branch workflow bootstrap before candidate workflow_dispatch acceptance. Missing inputs stay pending, not assumed.
 
+## E: Host with a shared job-started hook
+
+Request: “Add acme/gadget to the build Mac that already runs CI for acme/widget and acme/tool. Required-local routing; registration is approved.”
+
+Evidence: two existing instances under the dedicated runtime account, both online/idle. Each `.env` contains `ACTIONS_RUNNER_HOOK_JOB_STARTED=/usr/local/libexec/ci-gate/ci-gate.sh`; the file exists, `root:wheel 755`. The acme/gadget workflow's local job has `timeout-minutes: 15`; jobs on the other two repositories take up to 40 minutes.
+
+Pass: discovery reports the shared hook as a host-wide gate; the new instance receives the identical hook line before its first job, after the path is verified as the runtime account, with the restart done while idle; the 15-minute limit is raised to cover waiting behind the other repositories' jobs on the self-hosted route only, derived from `select`'s output, while a `force_hosted` run keeps 15; hosted fallback stays off because the user chose required-local.
+
+Not yet run in fresh agent contexts (added 2026-10-11).
+
 ## Adversarial regressions
 
 - Configure `HOSTED_RUNNER=self-hosted` or the preferred custom label on an untrusted/forced-hosted event. Pass: reject configuration before any API call, with approved standard-hosted labels and a deployment inventory collision gate.

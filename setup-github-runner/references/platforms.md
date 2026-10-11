@@ -21,6 +21,12 @@ Only trusted contributions run on a persistent host. The runtime account can exe
 
 Registration records PATH in the instance's `.path` and selected environment values in `.env`. The official [`runsvc.sh`](https://github.com/actions/runner/blob/main/src/Misc/layoutbin/runsvc.sh) exports `.path` when it exists, overriding the service definition's initial PATH. Inspect these files as the runtime account without logging secrets, and prepare any needed `.path` change there before verifying the effective service environment. Changing the service definition's PATH alone does not override `.path`.
 
+### Host-wide job gate
+
+Repository-scoped instances on one host run independently: N instances take N jobs at once. A host that serializes them names one shared script as `ACTIONS_RUNNER_HOOK_JOB_STARTED` in every instance's `.env`. A new instance joins that gate before its first job: verify as the runtime account that the hook path exists and is executable, append the identical line to the new `.env`, then restart the service while idle (`.env` is read at start). Verify first because the runner fails every job whose hook path is missing, and a gate's own off switch cannot help when its script never runs. The runner executes the hook as `bash -e <file>` and fails the job on a non-zero exit; the file sits outside the instance directory and ends in `.sh`.
+
+When the user wants serialization on a host that has no gate, offer an organization-scoped registration first: one instance shared by the repositories is a single queue with no custom script, and its waiting happens before the job starts.
+
 ## Linux
 
 Discover distribution and PID 1/service manager. Inspect `getent passwd`, `id`, sudo policy and actual memberships rather than assuming an Ubuntu account layout. For a missing account, use the distribution's documented account utility and local `--help`/manual. A system service account may use a non-login shell; choose a home and preparation mechanism that support this installation. On Debian/Ubuntu, inspect `adduser --help` and its installed manual, create the selected account with administrator authority, and omit sudo/docker/other privileged groups. Other distributions use their own documented tooling. Verify resulting UID, groups, home ownership and access to the selected runner directory. Give access only to this instance; avoid recursive ownership changes outside it.
