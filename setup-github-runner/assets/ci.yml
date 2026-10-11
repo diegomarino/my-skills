@@ -37,12 +37,13 @@ jobs:
           TRUSTED_RUNNER_REF: ${{ vars.TRUSTED_RUNNER_REF }}
           PREFERRED_RUNNER_NAME: ${{ vars.PREFERRED_RUNNER_NAME }}
           PREFERRED_RUNNER_LABEL: ${{ vars.PREFERRED_RUNNER_LABEL }}
+          REQUIRE_SELF_HOSTED: ${{ vars.REQUIRE_SELF_HOSTED }}
           RUNNER_LABELS: ${{ vars.RUNNER_LABELS }}
           # Required: choose a fallback compatible with the actual project checks.
           HOSTED_RUNNER: ${{ vars.HOSTED_RUNNER }}
           FORCE_HOSTED: ${{ inputs.force_hosted || false }}
           TRUSTED_EVENT: ${{ vars.ENABLE_SELF_HOSTED == 'true' && github.event_name != 'pull_request' && vars.TRUSTED_RUNNER_REF != '' && github.ref == vars.TRUSTED_RUNNER_REF }}
-          RUNNER_READ_TOKEN: ${{ github.event_name != 'pull_request' && vars.ENABLE_SELF_HOSTED == 'true' && vars.TRUSTED_RUNNER_REF != '' && github.ref == vars.TRUSTED_RUNNER_REF && secrets.RUNNER_READ_TOKEN || '' }}
+          RUNNER_READ_TOKEN: ${{ vars.REQUIRE_SELF_HOSTED != 'true' && github.event_name != 'pull_request' && vars.ENABLE_SELF_HOSTED == 'true' && vars.TRUSTED_RUNNER_REF != '' && github.ref == vars.TRUSTED_RUNNER_REF && secrets.RUNNER_READ_TOKEN || '' }}
         run: |
           if [ ! -f .github/scripts/select_runner.py ]; then
             echo 'Trusted selector missing: bootstrap .github/scripts/select_runner.py on the default branch or set RUNNER_SELECTOR_SHA to a reviewed commit containing it.' >&2

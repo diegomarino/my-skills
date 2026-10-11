@@ -14,7 +14,9 @@ Inspect authentication for the resolved host without printing tokens. If neither
 
 ## Missing selector PAT/secret
 
-In GitHub Settings → Developer settings → Personal access tokens → Fine-grained tokens, choose the actual resource owner, a finite expiration, **Only select repositories** and the intended repository, then repository Administration **Read-only**. Complete any organization approval. Put its value directly into repository Settings → Secrets and variables → Actions → New repository secret named `RUNNER_READ_TOKEN`, or let the user enter it into `gh secret set RUNNER_READ_TOKEN --repo ACTUAL_REPOSITORY` privately. The user never pastes it into chat. List/read secret names only; record expiry/rotation responsibility without its value. Configure non-secret variables using [CI](ci.md). Expired/missing/denied discovery credentials use the configured hosted fallback, without silently widening permissions.
+Only prepare this secret for automatic-fallback routing. Required-local routing does not use runtime lookup credentials; retain any existing remote secret. Operator inventory access remains separate.
+
+In GitHub Settings → Developer settings → Personal access tokens → Fine-grained tokens, choose the actual resource owner, a finite expiration, **Only select repositories** and the intended repository, then repository Administration **Read-only**. Complete any organization approval. Put its value directly into repository Settings → Secrets and variables → Actions → New repository secret named `RUNNER_READ_TOKEN`, or let the user enter it into `gh secret set RUNNER_READ_TOKEN --repo ACTUAL_REPOSITORY` privately. The user never pastes it into chat. List/read secret names only; record expiry/rotation responsibility without its value. Configure non-secret variables using [CI](ci.md). In automatic-fallback mode, expired/missing/denied discovery credentials use the configured hosted fallback, without silently widening permissions.
 
 ## Registration input and temporary files
 

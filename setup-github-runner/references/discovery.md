@@ -1,6 +1,6 @@
 # Discovery and access
 
-Read before preparing a new installation or repository integration. These inputs come from the target, not the example: repository/hostname, default branch, host and connection, OS/architecture, administrator connection account, separate standard runtime account/home, instance directory, registration scope/name, unique routing label, hosted fallback, real CI commands and privilege boundary.
+Read before preparing a new installation or repository integration. These inputs come from the target, not the example: repository/hostname, default branch, host and connection, OS/architecture, administrator connection account, separate standard runtime account/home, instance directory, registration scope/name, unique routing label, selected routing policy and compatible hosted route, real CI commands and privilege boundary.
 
 ## Repository
 
