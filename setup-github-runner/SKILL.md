@@ -18,6 +18,8 @@ Read [discovery](references/discovery.md) for repository/host inventory and miss
 
 Correlate local registration ID/URL with complete GitHub inventories and applicable group restrictions. Missing checkout files or API errors do not prove absence. Done when each prerequisite has evidence or an explicit pending action; complete independent preparation while dependent mutations wait.
 
+Choose repository or organization registration explicitly; for a shared organization runner, identify every intended repository and its trusted workflows. Follow [registration scope](references/setup.md#choose-registration-scope-and-access) for organization credentials, access-group preparation and the matching registration URL. Existing repository registrations are not converted implicitly.
+
 ## 2. Prepare and register
 
 Read [credentials](references/credentials.md) when operator access, registration tokens or selector PAT/secrets are missing. Keep their purposes separate; credentials stay outside chat, history and tracked artifacts. Read [platforms](references/platforms.md) to create/verify the runtime account and privilege boundary.

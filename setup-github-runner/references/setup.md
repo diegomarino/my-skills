@@ -1,6 +1,26 @@
 # Prepare and register an instance
 
-Read when installation or registration is authorized, after [discovery](discovery.md), [credentials](credentials.md) and account preparation in [platforms](platforms.md). Start with no assumptions about installed tools, accounts, runner files or access. Prefer verified existing resources; create missing prerequisites before dependent steps. For the repository-scoped installation below, use one separate directory and repository registration per repository; sharing a runtime account does not isolate instances. A shared organization-scoped alternative requires the [scope and access review](platforms.md#host-wide-job-gate) and its own registration plan.
+Read when installation or registration is authorized, after [discovery](discovery.md), [credentials](credentials.md) and account preparation in [platforms](platforms.md). Start with no assumptions about installed tools, accounts, runner files or access. Prefer verified existing resources; create missing prerequisites before dependent steps. Each instance has its own directory and registration; an organization instance can serve selected repositories, while repository registrations remain separate. Sharing a runtime account does not isolate instances.
+
+## Choose registration scope and access
+
+Confirm the selected GitHub host, registration scope, owner/organization, runner name, custom label and intended repositories before requesting a token. A shared runner must belong to an organization, not a personal account. If the intended repositories do not belong to the selected organization or organization access is unavailable, report that prerequisite rather than registering against one repository as a substitute.
+
+| Scope | Registration URL on github.com | Token endpoint |
+| --- | --- | --- |
+| Repository | `https://github.com/OWNER/REPOSITORY` | POST `/repos/{owner}/{repo}/actions/runners/registration-token` |
+| Organization | `https://github.com/ORGANIZATION` | POST `/orgs/{org}/actions/runners/registration-token` |
+
+Use the actual host for a supported GitHub Enterprise installation. Obtain the scope-matching token via the setup UI or the [private token-delivery procedure](credentials.md#registration-input-and-temporary-files); do not print an API token response or place a token in a recorded command.
+
+For organization registration, prepare access **before starting the runner service**:
+
+1. An authorized organization owner opens Settings → Actions → Runner groups. Inspect the group's current members, repository access and any workflow restrictions. Reuse a suitable group or create a group if the organization's current plan/capabilities permit it; do not broaden an existing shared group's access silently.
+2. Select **Selected repositories**, select exactly the approved repositories and save. Keep public-repository access disabled unless explicitly required and reviewed. Preserve or configure applicable workflow restrictions so intended trusted workflows are eligible. A group controls repository/workflow access, not trust in PR code.
+3. Record the group name/ID and read back its policy and repository list. If only the default group is available, inspect and explicitly approve its complete access policy; changing it affects existing members. Otherwise keep setup pending rather than accepting an all-repositories default.
+4. Register into that existing group with `--runnergroup`, then verify membership before service activation. Omitting it places the runner in the default group; a nonexistent group is an error, not a reason to retry without the flag.
+
+See GitHub's [organization setup](https://docs.github.com/en/actions/how-tos/manage-runners/self-hosted-runners/add-runners#adding-a-self-hosted-runner-to-an-organization), [group UI procedure](https://docs.github.com/en/actions/how-tos/manage-runners/self-hosted-runners/manage-access) and [group REST endpoints](https://docs.github.com/en/rest/actions/self-hosted-runner-groups). For API-based administration, prepare the same reviewed membership/access changes using those schemas and private operator authentication; do not replace a group's complete repository/member list without preserving unrelated authorized entries.
 
 ## Official release and preparation
 
@@ -31,7 +51,17 @@ If extraction is interrupted, `inspect --directory "$INSTANCE_DIR"` reports `inc
 
 ## Register
 
-As that account on macOS/Linux, run the selected distribution's `config.sh`. Use the actual repository URL and a stable unique name; supply a verified unique custom routing label while retaining default labels. Inspect current `--help`; omit `--replace`. Choose the instance work directory explicitly or accept the documented default. Let the user enter the token privately when prompted. Check registration identity against GitHub before installing its service. A name collision or partial registration requires inspection; preserve unrelated instances.
+As that account on macOS/Linux, run the selected distribution's `config.sh`. Use the selected scope's URL and a stable unique name; supply a verified unique custom routing label while retaining default labels. Inspect current `--help`; omit `--replace`. Choose the instance work directory explicitly or accept the documented default. Let the user enter the token privately when prompted. Check registration identity against GitHub before installing its service. A name collision or partial registration requires inspection; preserve unrelated instances.
+
+For organization registration, after verifying the group's name and the installed version's interactive token handling:
+
+```bash
+# Token is entered privately at the configuration prompt, not on this command line.
+./config.sh --url "$REGISTRATION_URL" --name "$RUNNER_NAME" \
+  --labels "$ROUTING_LABEL" --runnergroup "$RUNNER_GROUP"
+```
+
+Read back `.runner` via the inspector: `gitHubUrl` must identify the organization, and `agentId` must match its inventory and group membership. Reuse the same archive/account/service preparation for either scope. A migration from existing repository instances needs a separate plan; keep those registrations and services until their replacement has authorized acceptance.
 
 After registration, prepare the [platform service](platforms.md), [real CI integration](ci.md) and [independent verification](verification.md). Service success does not imply CI success.
 

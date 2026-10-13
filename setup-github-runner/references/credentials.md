@@ -4,8 +4,8 @@ Read when operator authentication, registration or selector credentials are miss
 
 | Credential | Purpose and boundary |
 | --- | --- |
-| Operator authentication | Existing GitHub connector or authenticated `gh` on the administrator workstation. Repository registration-token creation needs admin access; fine-grained **Administration: write**. Creating secrets/variables requires its own capability. |
-| Registration token | Short-lived token for `config.sh`/`config.cmd`, obtained just before use from repository Settings → Actions → Runners or POST `/repos/{owner}/{repo}/actions/runners/registration-token`. Currently expires in one hour. It does not provide ongoing workflow discovery. |
+| Operator authentication | Existing GitHub connector or authenticated `gh` on the administrator workstation. Repository registration requires repository admin access and fine-grained **Administration: write**. Organization registration through the UI requires an organization owner; the REST endpoint requires organization admin access and fine-grained organization **Self-hosted runners: write**. Group management needs its own authorized organization capability. Creating secrets/variables requires its own capability. |
+| Registration token | Obtain just before use from the selected scope's Settings → Actions → Runners. Repository: POST `/repos/{owner}/{repo}/actions/runners/registration-token`; organization: POST `/orgs/{org}/actions/runners/registration-token`. Both expire after one hour. Match the token scope to the `config.sh` URL; it does not provide ongoing workflow discovery. |
 | `RUNNER_READ_TOKEN` | Finite-expiry fine-grained PAT, resource owner and selected repository only, **Administration: read**. Used solely by the hosted workflow selector; it cannot register or administer the repo. Ordinary workflow `GITHUB_TOKEN` lacks this Administration capability. |
 
 ## Missing operator access
@@ -13,6 +13,8 @@ Read when operator authentication, registration or selector credentials are miss
 Inspect authentication for the resolved host without printing tokens. If neither CLI nor connector access exists, install `gh` from its [official installation instructions](https://cli.github.com/) on the operator workstation or use the authenticated browser. Use interactive `gh auth login --hostname ACTUAL_HOST` there, with the required organization/SSO approval. Ask for the exact missing capability rather than requesting a broad PAT. Authenticated identity still needs repository authorization.
 
 ## Missing selector PAT/secret
+
+Organization inventory/group inspection uses operator authentication with organization **Self-hosted runners: read**, separately from registration write permission. Keep that operator credential off the runtime account and out of the hosted selector. The bundled selector still uses repository Administration read; see [organization routing](ci.md#organization-runner-routing) before provisioning its PAT.
 
 Only prepare this secret for automatic-fallback routing. Required-local routing does not use runtime lookup credentials; retain any existing remote secret. Operator inventory access remains separate.
 

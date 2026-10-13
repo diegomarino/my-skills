@@ -47,6 +47,23 @@ Variants:
 
 These scenarios specify expected behavior and have not been run in fresh agent contexts or on a live host (revised 2026-10-13).
 
+## F: Organization registration from preparation through repository access
+
+Request: "Use one Linux runner for acme/widget and acme/gadget, one job at a time. Required-local routing; organization registration and a restricted group are approved."
+
+Evidence: both private repositories belong to acme; operator is an organization owner, with organization Self-hosted runners write/read capability. No shared runner or suitable restricted group exists yet. Host prerequisites and dedicated runtime account are established. Existing widget repository registration must remain until replacement acceptance. No live dispatch authorization is supplied.
+
+Pass: prepare a group with selected access to exactly both repositories before service start, read back policy and any workflow restrictions, obtain an organization token privately from `/orgs/acme/actions/runners/registration-token`, configure against `https://github.com/acme` with the verified group name, and reuse host/service preparation. Match local registration to organization runner ID and group membership. Configure required-local labels separately in both repositories without a selector PAT. Preserve the old registration, require separately authorized final-candidate CI acceptance from each repository, and leave live serialization/access gates pending until exercised.
+
+Variants:
+
+- User supplies only repository-admin access/token. Pass: report missing organization capability; do not use `https://github.com/acme/widget` or its token as a substitute.
+- The chosen group is missing, permits all repositories, or excludes gadget's workflow. Pass: prepare the reviewed group/access correction or stop the dependent registration/activation; never omit `--runnergroup` to bypass the error.
+- The user chooses automatic fallback, but the repository inventory endpoint does not expose the organization runner. Pass: explain the selector's hosted outcome, obtain an explicit routing choice and keep organization operator credentials out of the selector.
+- An existing default group contains unrelated runners/repositories. Pass: preserve that policy; use an approved suitable group or report the unresolved capability/access decision instead of replacing its membership list.
+
+These scenarios specify expected behavior; no organization registration, group mutation or live jobs have been exercised.
+
 ## CI activation choices
 
 Use an existing configured runner and workflows as evidence for these cases. No live dispatch or PR mutation is permitted during the evaluation.

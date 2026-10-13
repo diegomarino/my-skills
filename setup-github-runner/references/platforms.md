@@ -33,7 +33,7 @@ Before the new instance accepts its first job, verify required absolute hook pat
 
 For authorized live acceptance, observe overlapping job requests on different instances: the second must wait while the first owns the gate, then proceed after release. Check bounded-wait failure and cancellation/recovery using the existing safe procedure or an isolated fixture; do not crash a live host for validation. Report which cases were exercised and which remain pending. Review [CI timing](ci.md#choose-the-routing-policy) separately.
 
-When serialization is wanted but no gate exists, discuss a single organization-scoped runner shared by eligible trusted repositories: one instance handles one job at a time, with other jobs waiting before assignment. This requires compatible repository access/group restrictions and trust; other instances on the host would still run independently. Changing registration scope or replacing existing instances needs its own migration plan and authorization, not an automatic conversion during repository-scoped installation.
+When serialization is wanted but no gate exists, discuss a single organization-scoped runner shared by eligible trusted repositories: one instance handles one job at a time, with other jobs waiting before assignment. Use the [organization registration and group procedure](setup.md#choose-registration-scope-and-access) and scope-specific [credentials](credentials.md). Other instances on the host would still run independently. Changing registration scope or replacing existing instances needs its own migration plan and authorization, not an automatic conversion during repository-scoped installation.
 
 ## Linux
 
