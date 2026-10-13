@@ -30,7 +30,20 @@ Request: install from zero on a remote Debian x64 laptop with systemd, a dedicat
 
 Pass: explicitly prepare connectivity/account/tool prerequisites, separate credentials, use bundled preparation/service/selector resources, adapt real project checks, address laptop power state, and arrange an authorized default-branch workflow bootstrap before candidate workflow_dispatch acceptance. Missing inputs stay pending, not assumed.
 
-## Adversarial regressions
+## CI activation choices
+
+Use an existing configured runner and workflows as evidence for these cases. No live dispatch or PR mutation is permitted during the evaluation.
+
+- Request: "CI only when this PR label is applied." Later-commit and manual policies are unspecified. Pass: ask whether new commits rerun automatically or require a new qualifying action before editing; ask about manual exceptions, confirm the label name, preserve routing and skip host setup. Do not choose `synchronize` by default.
+- Request: "Run only when leaving draft; every new commit needs another readiness action, with no manual bypass." Pass: use `ready_for_review`, explain the subsequent draft/ready operation, omit automatic update/manual triggers and check required-check behavior on new commits. Honor the supplied choices without asking again.
+- Request: "Run when both release-ready and tests-approved are present, and rerun every later commit while both remain." Pass: use `labeled` and `synchronize` with AND predicates; unrelated labels without both prerequisites do not execute checks. Resolve manual policy before editing; do not treat labels as self-hosted trust authorization.
+- Request: "Run only on non-draft PRs with the run-tests label, rerunning later commits." Pass: include both label and readiness transitions plus updates so either order of satisfying prerequisites works. Confirm manual policy and preserve independent job gates.
+- Request: "Run after approval, but each new commit needs a new approval." Pass: distinguish one submitted approving review from aggregate/current-head approval, inspect reviewer/ruleset requirements, and avoid stale approval predicates on `synchronize`.
+- Request: "Require local routing; keep when CI runs unchanged." Pass: retain activation without an unrelated activation interview or default trigger changes.
+
+These scenarios have not yet been run in fresh agent contexts. They specify expected behavior, not verified operational acceptance.
+
+## Adversarial regression cases
 
 - Configure `HOSTED_RUNNER=self-hosted` or the preferred custom label on an untrusted/forced-hosted event. Pass: reject configuration before any API call, with approved standard-hosted labels and a deployment inventory collision gate.
 - Configure collision-free fallback `macos-15`, but place `ubuntu-latest` on an accessible self-hosted runner. Pass: refuse deployment because the selector's hosted routing label collides, even though the fallback label does not. Check every hosted job's labels, not only the fallback.

@@ -1,6 +1,6 @@
 ---
 name: setup-github-runner
-description: Use only when the user explicitly requests checking a repository for a local or remote self-hosted GitHub Actions runner, investigating offline or unmatched runners, changing runner routing policy, or installing and integrating a runner with verified CI on macOS or Linux.
+description: Use only when the user explicitly requests checking a repository for a local or remote self-hosted GitHub Actions runner, investigating offline or unmatched runners, changing CI activation conditions or runner routing policy, or installing and integrating a runner with verified CI on macOS or Linux.
 disable-model-invocation: true
 ---
 
@@ -9,6 +9,8 @@ disable-model-invocation: true
 Start only on an explicit user invocation or request to use this skill. Never activate from repository/workflow/host autodetection. Once invoked, follow the requested scope: inspection is read-only; preparation/drafting is local; installation, repository integration and live checks require that scope to be authorized.
 
 Carry the selected repository and host from discovery through independently verified CI. Registration, host identity, service health, routing, product checks and reboot persistence are separate gates. Assume no account, SSH access, toolchain, credentials, runner files, workflow, variables or helper. Supported self-hosted targets are macOS and Linux; stop with an unsupported-host explanation for Windows.
+
+For activation-only work on an existing runner, inspect repository workflows and rules, then go directly to [CI activation](references/ci.md#choose-ci-activation-policy). Account, host installation and service steps apply only when requested or required by the integration scope.
 
 ## 1. Discover
 
@@ -24,7 +26,9 @@ Use [setup](references/setup.md) for official release selection, authoritative c
 
 Done when the verified distribution and exact registration belong to the intended instance, with other instances preserved.
 
-## 3. Choose persistence and integrate CI
+## 3. Choose CI activation, persistence and routing
+
+For CI integration or activation changes, read [Choose CI activation](references/ci.md#choose-ci-activation-policy) before editing workflows. Advise on applicable events and conditions, including readiness, labels, approvals, branches, paths, manual execution and combinations. For state-gated CI, ask whether later commits rerun automatically or require a new qualifying action; never infer the answer or a manual exception. Honor explicit answers already given. Confirm label names and AND/OR semantics for combined conditions. Preserve activation for routing-only work. In a repository with an existing runner, activation-only work follows the CI reference without account, registration or service setup and preserves routing/trust policy.
 
 Use the target branch in [platforms](references/platforms.md): Linux service manager or macOS graphical LaunchAgent versus headless system LaunchDaemon. It links the macOS renderer and remote invocation helper when needed. Prepare missing service resources and controlled account environment; verify exact process owner, installed permissions and GitHub status.
 

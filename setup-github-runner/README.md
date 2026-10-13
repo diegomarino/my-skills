@@ -22,11 +22,13 @@ The portable format is a directory containing `SKILL.md` with YAML `name` and `d
 
 ## Use
 
+CI activation can be adapted in repositories with an existing runner: draft/readiness transitions, PR labels, approvals, branches, paths, manual execution and composed conditions. Before editing state-gated CI, the skill must ask whether later commits rerun automatically or require a new qualifying action, unless already answered. Label names, combined prerequisites and manual exceptions are user choices; `ci:run` is only an example. Routing-only requests preserve activation. See [activation policy](references/ci.md#choose-ci-activation-policy).
+
 Invoke `$setup-github-runner` explicitly in Codex or `/setup-github-runner` in [Claude Code](https://code.claude.com/docs/en/skills), then describe the repository, intended host and scope. Automatic invocation is disabled: Codex uses `policy.allow_implicit_invocation: false` in `agents/openai.yaml`; Claude Code uses `disable-model-invocation: true` in the skill frontmatter. A generic runner-related question is not an automatic trigger. Other agents must honor the explicit-only instruction; their support for these runtime controls may differ. Invocation syntax depends on the agent; it is not a shell command. The skill reports registration/access, host identity, service health, routing and any unchecked acceptance gates. It uses an available GitHub connector, authenticated `gh`, or GitHub UI; host access is required only for host checks and setup.
 
 Diagnosis is read-only. Configuration follows the user's authorized scope; skill development never installs a live runner. The runtime account is dedicated and standard, distinct from the personal/admin account. Tokens stay in private local input or a secret-safe mechanism.
 
-Before integrating CI, the skill offers required-local queueing (`REQUIRE_SELF_HOSTED=true`) or automatic hosted fallback (`false`), unless the user already chose. It presents the discovered labels, compatible hosted choice and trust/configuration inputs in [CI](references/ci.md#choose-the-routing-policy). Required-local uses no discovery PAT; `force_hosted` remains a manual boolean, default false. Untrusted PRs remain hosted, and local outages can keep CI queued until GitHub's queue timeout.
+For runner routing, the skill offers required-local queueing (`REQUIRE_SELF_HOSTED=true`) or automatic hosted fallback (`false`), unless the user already chose. It presents the discovered labels, compatible hosted choice and trust/configuration inputs in [CI](references/ci.md#choose-the-routing-policy). Required-local uses no discovery PAT; where manual dispatch is explicitly allowed, `force_hosted` remains a manual boolean, default false. Untrusted PRs remain hosted, and local outages can keep CI queued until GitHub's queue timeout.
 
 ## Resources
 
