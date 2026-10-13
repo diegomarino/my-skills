@@ -1,6 +1,6 @@
 # Prepare and register an instance
 
-Read when installation or registration is authorized, after [discovery](discovery.md), [credentials](credentials.md) and account preparation in [platforms](platforms.md). Start with no assumptions about installed tools, accounts, runner files or access. Prefer verified existing resources; create missing prerequisites before dependent steps. Use one separate directory and repository registration per repository; sharing a runtime account does not isolate instances.
+Read when installation or registration is authorized, after [discovery](discovery.md), [credentials](credentials.md) and account preparation in [platforms](platforms.md). Start with no assumptions about installed tools, accounts, runner files or access. Prefer verified existing resources; create missing prerequisites before dependent steps. For the repository-scoped installation below, use one separate directory and repository registration per repository; sharing a runtime account does not isolate instances. A shared organization-scoped alternative requires the [scope and access review](platforms.md#host-wide-job-gate) and its own registration plan.
 
 ## Official release and preparation
 

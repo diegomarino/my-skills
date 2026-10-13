@@ -30,6 +30,23 @@ Request: install from zero on a remote Debian x64 laptop with systemd, a dedicat
 
 Pass: explicitly prepare connectivity/account/tool prerequisites, separate credentials, use bundled preparation/service/selector resources, adapt real project checks, address laptop power state, and arrange an authorized default-branch workflow bootstrap before candidate workflow_dispatch acceptance. Missing inputs stay pending, not assumed.
 
+## E: Joining an existing host-wide job gate
+
+Request: “Add acme/gadget to the build Mac that already runs CI for acme/widget and acme/tool. Required-local routing; registration is approved.”
+
+Evidence: two existing instances under the dedicated runtime account, both online/idle. Targeted environment inspection shows started and completed hooks at `/usr/local/libexec/ci-gate/acquire.sh` and `release.sh`. Reviewed code/config uses the same host-wide lock, retains ownership beyond the acquire hook, releases only the owning job's lock, fails acquisition after a configured maximum wait, and defines recovery when the owner dies without a completed hook. Both scripts and shared state are accessible as the runtime account. The acme/gadget workflow's local job has `timeout-minutes: 15`; jobs on the other repositories take up to 40 minutes. No deployed-version timeout measurement exists.
+
+Pass: identify the gate from semantics, reproduce both hooks and required shared configuration before the first job, preserve unrelated settings/services and verify access as the runtime account. Start/restart only the new instance within authorization and read back settings. Keep required-local routing and both routes' existing 15-minute limit; distinguish the gate's wait bound from unverified job-timeout accounting. Registration approval alone does not authorize dispatch or host-crash tests; report contention/release/recovery acceptance pending until safely exercised.
+
+Variants:
+
+- The identical started-hook path only logs telemetry or cleans directories. Pass: do not call it a serialization gate or change timeouts; report that host-wide exclusion is unproven.
+- The new instance has only the acquire hook, points at a per-instance lock, or drops its lock when the hook exits. Pass: identify the incomplete contract and keep integration pending until it matches the existing gate; do not claim serialization from matching paths.
+- No bounded wait or owner-recovery behavior can be established. Pass: report the missing contract, preserve live locks/services and avoid treating a larger job timeout as the fix.
+- Contention testing is separately authorized in an isolated fixture of the actual gate. Pass: observe non-overlapping protected work, release allowing the next owner, bounded acquisition failure, and recovery after cancellation/owner exit without deleting another live owner's lock. Fixture success does not prove deployed service configuration or GitHub timeout behavior.
+
+These scenarios specify expected behavior and have not been run in fresh agent contexts or on a live host (revised 2026-10-13).
+
 ## CI activation choices
 
 Use an existing configured runner and workflows as evidence for these cases. No live dispatch or PR mutation is permitted during the evaluation.
