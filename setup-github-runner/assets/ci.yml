@@ -1,4 +1,8 @@
 # Adapt into the project's existing CI; replace the failing checks step.
+# Choose activation with the user using references/ci.md#choose-ci-activation-policy.
+# These events illustrate routing, not a default activation policy.
+# Confirm later-commit behavior and manual exceptions before adding state gates.
+# Add eligibility to select; keep checks dependent on select and review other jobs.
 name: Preferred runner CI
 on:
   push:
