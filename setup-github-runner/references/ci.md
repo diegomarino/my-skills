@@ -1,6 +1,63 @@
-# Runner routing policy
+# CI activation and runner routing
 
 Read this when integrating a verified runner with the project's real CI. Reuse existing jobs and gates. [../assets/ci.yml](../assets/ci.yml) is an adaptable workflow, not a finished project pipeline; its checks step intentionally fails until replaced with actual build/test/package commands. Match the hosted fallback OS, architecture, SDKs, and container support to those checks. Provision missing host tools outside CI under the administrator account; do not assume the administrator's interactive environment, credentials or caches. Registration captures the runtime account's PATH in `.path`, which `runsvc.sh` can export instead of the service definition's initial PATH; inspect `.path` and `.env` and verify the effective service environment as described in [platforms](platforms.md). Use job-owned environments/build directories under `RUNNER_TEMP`, publish paths via `GITHUB_PATH`, and retain relevant artifacts.
+
+## Choose CI activation policy
+
+Activation determines when CI is evaluated and eligible to execute; routing determines where eligible jobs run. Inspect all relevant workflows, reusable callers, required checks and repository rules first. For routing-only requests, preserve activation. For activation-only requests on an existing runner, preserve routing and trust gates; skip host installation, registration and service changes. Clarify whether "tag" means a PR label or a Git tag if the request is ambiguous.
+
+For a new integration, offer the applicable policies below. For an existing integration, honor the requested policy and advise on its relevant alternatives and consequences. These are examples, not an exhaustive menu; inspect the current GitHub event documentation for other requested conditions. `ci:run` is an illustrative repository convention, not a GitHub standard or a default label.
+
+| User intent | Event and eligibility |
+| --- | --- |
+| Every PR update | `pull_request` defaults to `opened`, `synchronize`, `reopened` |
+| Transition out of draft | `pull_request.types: [ready_for_review]`; later commits need a separate decision |
+| All updates to a non-draft PR | `opened`, `reopened`, `ready_for_review`, `synchronize`, with `draft == false` |
+| Apply a chosen label | `pull_request.types: [labeled]`, with the added label matching the chosen name |
+| One or more labels remain present | Relevant PR events plus predicates over the current labels; confirm AND versus OR |
+| An approving review is submitted | `pull_request_review.types: [submitted]`, with `review.state == 'approved'`; define eligible reviewers and later-commit behavior |
+| Branch, Git tag or changed-path restrictions | Applicable `push`/`pull_request` branch, tag or path filters; Git tags use `push.tags` |
+| Manual, scheduled or another event | `workflow_dispatch`, `schedule`, or the documented event appropriate to the request |
+
+Before editing state-gated CI, ask one focused question at a time, unless the user already answered it:
+
+1. **Mandatory:** "Once the condition is satisfied, should later commits rerun CI automatically, or should each new commit require a new qualifying action?" Do not infer a default or proceed with dependent edits until answered. Explain that transition-only triggers do not validate later commits.
+2. For labels or combined conditions, confirm the names, AND/OR semantics, and any additional prerequisites, such as non-draft status or target branch. Ask what removing a label, returning to draft or dismissing an approval should do if revocation matters; these events do not inherently cancel running jobs or revoke successful checks.
+3. Confirm whether manual execution is allowed and whether it obeys the same prerequisites or intentionally bypasses them. Do not retain or add a manual exception without an explicit choice when changing activation policy.
+
+Summarize the user's chosen event set, eligibility predicate, later-commit behavior and manual policy before changing workflows. A label authorizes execution only under the repository's existing code-trust policy; it does not make a fork, bot or internal contributor trusted for self-hosted execution. An approval event describes one review, not aggregate PR approval or approval of a later commit. If the user requires current-head approval, inspect review/ruleset semantics and validate that requirement explicitly rather than treating `review.state` as persistent authorization.
+
+GitHub evaluates a workflow on its configured events. Job-level `if` conditions may leave an execution with skipped jobs; `on` cannot filter a `labeled` event by label name. For composed state predicates, subscribe to each event the user wants to reevaluate them, including transitions that satisfy another prerequisite. Do not add `synchronize`, `opened`, `reopened`, `unlabeled` or revocation handlers automatically: derive them from the user's answers. Put eligibility on the first job (`select` in the template) and ensure independent jobs and jobs using `always()` cannot bypass it. Use each event's available context, and confirm checkout/ref and tested SHA when changing event families.
+
+Examples below use the illustrative `ci:run` label. Adapt names and conditions to the user's answers; these fragments replace the template's `on` and add an `if` to `select` while retaining its routing and job dependency.
+
+Only the act of applying that label:
+
+```yaml
+on:
+  pull_request:
+    types: [labeled]
+jobs:
+  select:
+    if: github.event.label.name == 'ci:run'
+    # Existing selector job and downstream checks.
+```
+
+If the user explicitly chooses automatic reruns for later commits while both labels remain present:
+
+```yaml
+on:
+  pull_request:
+    types: [labeled, synchronize]
+jobs:
+  select:
+    if: >-
+      contains(github.event.pull_request.labels.*.name, 'ci:run') &&
+      contains(github.event.pull_request.labels.*.name, 'ready-for-ci')
+    # Existing selector job and downstream checks.
+```
+
+For "each commit needs a new action", explain the remove/reapply-label or draft/ready operation and verify that checks for the new SHA remain outstanding until it occurs. Do not introduce automatic label removal or extra automation without a requirement. Review required-check behavior: an entire workflow filtered out can leave a required check pending, whereas a conditionally skipped job reports success. Preserve the intended merge gate and check names; do not silently make unvalidated commits mergeable or leave them permanently blocked. See GitHub's [event reference](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows) and [required-check behavior](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches#require-status-checks-before-merging).
 
 ## Choose the routing policy
 
@@ -75,6 +132,8 @@ Self-hosted target provisioning supports macOS and Linux. Windows hosted labels 
 A label array is an AND match, not fallback order; runner names are not routing labels. Independently inspect the full accessible inventory to ensure the custom label identifies only this instance. Availability is a snapshot, not a reservation. After selection, a disconnect/busy transition can leave a job queued; it does not migrate to hosted, and execution timeouts do not bound queue time. [GitHub's native routing](https://docs.github.com/en/actions/reference/runners/self-hosted-runners#routing-precedence-for-self-hosted-runners) keeps unavailable jobs queued and fails them after more than 24 hours. In required-local mode, local outages therefore leave CI waiting, without automatic hosted migration. Add queue supervision only for an actual requirement. One instance's busy flag does not establish whole-host capacity. Concurrency cancellation is not success.
 
 ## Acceptance
+
+For activation-only changes, verify the chosen event/condition combinations and later-commit behavior on the final candidate within authorized scope. Cover eligible and ineligible states, unrelated labels, combined prerequisites and the chosen manual policy; check required-check behavior for the current SHA. Preserve existing routing acceptance. If manual dispatch is excluded, use the approved qualifying event for live checks rather than adding a bypass to test. Do not dispatch jobs or mutate PR labels/reviews without authorization. The preferred/forced-hosted procedure below applies to runner integration where those routes and manual execution are approved; report an excluded route as outside the chosen policy.
 
 Dispatch the real preferred-host checks on the **final candidate**, wait for every required job to reach a terminal conclusion, and collect its evidence. Only then dispatch `force_hosted` on the **same final candidate** and wait again. The workflow uses `cancel-in-progress` for the same workflow/ref, so starting the second run early can cancel the first. Capture job execution-machine logs, commit, terminal conclusions for every required job, product-check results, and independently read relevant artifacts. Dispatch acceptance or intermediate tests do not prove workflow success. A routing-only smoke is not product acceptance. After authorized merge or user merge, restore `TRUSTED_RUNNER_REF` to the intended deployed branch (if temporarily set to a candidate), review any pinned selector SHA, and read back main's deployed workflow and configuration. Report the diff, test results, selected policy/configuration and every remaining hosted job with its reason. Add focused regressions for busy/offline states, absent lookup credentials, lookup failures, manual override, missing configuration and applicable PR protections; run actionlint and the repository-required checks. Reboot, offline/busy live transitions, signing, physical devices and production runtime remain unchecked unless actually exercised.
 

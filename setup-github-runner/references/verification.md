@@ -4,11 +4,14 @@ Read after authorized deployment, and whenever a failure needs diagnosis. Do not
 
 ## Evidence receipt
 
+For activation-only work on an existing runner, verify the activation cases in [CI acceptance](ci.md#acceptance); host provisioning and forced-hosted dispatch are not prerequisites. Exercise only approved triggers and routes, and report any live checks that remain pending.
+
 Capture non-secret evidence for the actual target:
 
 | Gate | Independent readback |
 | --- | --- |
 | Repository | Host/repo identity, candidate commit, workflow/configuration, branch protections and variable/secret names |
+| CI activation | Chosen triggers/conditions, explicit later-commit and manual policies, eligible/ineligible cases and required-check behavior on the tested SHA |
 | Archive | Official release URL, selected version/architecture and authoritative versus computed SHA256 |
 | Host | OS/architecture, runtime account standard/non-admin, home/path ownership, session requirement, storage/power state |
 | Service | Installed bytes/mode/owner, exact unit/domain, process PID/owner and service environment |
