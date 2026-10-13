@@ -6,7 +6,7 @@ Read before preparing a new installation or repository integration. These inputs
 
 Read agent instructions and `git status --short`, remotes and default branch. Preserve dirty/concurrent work; use an isolated branch/worktree for workflow changes. Read existing workflows, dependency/toolchain declarations and project build/test/package/installation commands. Inspect protection/ruleset policy, registered runners and accessible runner groups, and Actions variable/secret **names only**. Use an existing connector, authenticated `gh` for the actual hostname, or GitHub UI; create missing operator access using [credentials](credentials.md).
 
-A complete repository-scoped inventory can use:
+A repository query alone is not a complete inventory for organization registration. Confirm the registration scope with the user before treating a missing repository registration as absence. For repository registrations:
 
 ```bash
 gh api --hostname "$GITHUB_HOST" --method GET \
@@ -15,6 +15,8 @@ gh api --hostname "$GITHUB_HOST" --method GET \
 ```
 
 Populate non-secret variables from verified inputs. If remotes conflict, resolve the requested repository rather than selecting silently. An empty success proves only that scope is empty. Verify organization/enterprise group repository and workflow restrictions through Actions → Runners or [runner-group API](https://docs.github.com/en/rest/actions/self-hosted-runner-groups); an organization inventory alone does not prove repository access. Errors, inaccessible groups or incomplete pages remain **unknown**, not absent. Inventory all accessible labels before selecting a unique custom label.
+
+For a selected organization, use operator authentication and paginate `GET /orgs/{org}/actions/runners` and `GET /orgs/{org}/actions/runner-groups`. Inspect the selected group with `GET /orgs/{org}/actions/runner-groups/{group_id}`, its members with the `/runners` suffix, and selected repository access with `/repositories`; paginate both lists. Correlate runner ID, organization URL, group membership and each intended repository/workflow. Include public-repository and workflow restrictions in the readback. Follow [scope and access preparation](setup.md#choose-registration-scope-and-access) for missing prerequisites.
 
 ## Host
 
