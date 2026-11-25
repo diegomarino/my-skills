@@ -1,7 +1,7 @@
 ---
 name: cli-motion
 description: Turns a declarative YAML scene (typed commands, highlighted output, spinners, real captured commands, banners with animated effects, scene transitions) into a crisp animated SVG terminal recording, still, GIF or MP4, themed with any of 25 palettes and 5 fonts. Use when asked for a terminal demo, CLI animation, README hero, screencast-style SVG, terminal GIF or MP4, or an animated banner for a command-line tool, without recording a real terminal. Output is deterministic, so regenerating gives byte-identical files.
-compatibility: Node 20+. Network on first run (npm ci into the user cache, svg-term via npx). ffmpeg optional (MP4 export; GIF has a pure-JS fallback). Nerd Font (powerline prompt) downloaded once on demand. Writes nothing inside the skill folder.
+compatibility: Node 20+. Network on first run only (npm ci into the user cache, which includes the pinned svg-term). ffmpeg optional (MP4 export; GIF has a pure-JS fallback). Nerd Font (powerline prompt) downloaded once on demand. Writes nothing inside the skill folder.
 ---
 
 # cli-motion
@@ -29,7 +29,7 @@ Run everything with `node scripts/cli-motion.mjs <command>` (path relative to th
 | one frame (screenshot, thumbnail) | `still demo.scene.yaml --at end` | `demo.still.svg` |
 | GIF and/or MP4 | `export demo.scene.yaml [--gif] [--mp4] [--scale 1\|2\|3] [--fps N]` | `demo.gif`, `demo.mp4` |
 
-   The first render or export takes about 20–60 s (npm ci into the cache, svg-term via npx, then rasterising). Run long exports in the background and wait for the exit; later runs are faster. After a dependency change the cache hash changes: run `doctor --install` once.
+   The first render or export takes about 20–60 s (npm ci into the cache, the pinned svg-term from the cache, then rasterising). Run long exports in the background and wait for the exit; later runs are faster. After a dependency change the cache hash changes: run `doctor --install` once.
 5. **Verify** (next section), adjust the scene, repeat.
 6. **Deliver**: the scene and its rendered files, with the embed line (`![demo](demo.svg)`). For GIF/MP4 always set `window_background` first.
 
@@ -49,7 +49,7 @@ steps:
 
 ## Verify the result
 
-1. `doctor` first when something fails: Node version, ffmpeg, npx, dependency cache, which formats this machine can write.
+1. `doctor` first when something fails: Node version, ffmpeg, dependency cache, a real svg-term test render, and which formats this machine can write.
 2. `still demo.scene.yaml --at end` and look at the final frame; try `--at 1500` (ms) for a mid-animation check. Stills auto-size so nothing scrolls off.
 3. Open the animated SVG in a browser and confirm text is crisp, nothing shimmers and the loop ends on a readable hold. To capture it with a browser tool, **screenshot the SVG element, or size the viewport to the SVG's width and height exactly** (read them from the root `<svg>`); a bigger viewport leaves a white border around the picture.
 4. For GIF/MP4, check the length matches the cast and that the GIF really moves (open it, or compare two stills at different times).
@@ -66,7 +66,7 @@ steps:
 | `preview [--fonts] [--sizes] [--themes] [--out sheet.png\|html]` | contact sheet of font × size × theme, each cell labelled |
 | `themes [--json]` | list the 25 themes |
 | `fonts [--json]` | the five fonts, their packages, Nerd Font cache state |
-| `doctor [--install]` | Node, ffmpeg, npx, dependency cache; `--install` fills the cache |
+| `doctor [--install]` | Node, ffmpeg, cache, svg-term test render; `--install` fills the cache |
 
 ## Writing a scene
 
@@ -106,4 +106,4 @@ Examples with scene and rendered output: [examples/README.md](examples/README.md
 - Never write inside this skill folder; outputs go next to the scene or where `-o` says.
 - Do not edit `assets/themes/*.json` by hand; regenerate with `scripts/sync-themes.mjs`.
 - Keep scenes deterministic: no timestamps or machine paths in typed text unless pinned in the style (`prompt_time`, `prompt_cwd`).
-- Tests: from this folder, `node --test tests/*.test.mjs` (a bare `tests/` directory argument fails). The first run needs network once (npm ci into `~/.cache/cli-motion`, svg-term via npx).
+- Tests: from this folder, `node --test tests/*.test.mjs` (a bare `tests/` directory argument fails). The first run needs network once (npm ci into `~/.cache/cli-motion`, svg-term is part of the cache).

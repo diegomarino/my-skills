@@ -89,3 +89,16 @@ export function dep(name) {
   if (!requireFromCache) ensureDeps();
   return requireFromCache(name);
 }
+
+/** Absolute path of the pinned svg-term CLI inside the dependency cache (installs the cache if needed). */
+export function svgTermBin(opts) {
+  const dir = ensureDeps(opts);
+  const pkgFile = join(dir, 'node_modules', 'svg-term-cli', 'package.json');
+  if (!existsSync(pkgFile)) {
+    throw new Error(
+      `svg-term-cli is missing from the dependency cache ${dir}. Run \`cli-motion doctor --install\` (needs network once); delete the folder first if it persists.`,
+    );
+  }
+  const bin = JSON.parse(readFileSync(pkgFile, 'utf8')).bin;
+  return join(dir, 'node_modules', 'svg-term-cli', typeof bin === 'string' ? bin : bin['svg-term']);
+}

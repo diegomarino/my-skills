@@ -57,6 +57,30 @@ export function validKeys() {
   return Object.keys(loadDefaults());
 }
 
+/** Closest valid name to a typo, or null: ` Did you mean "theme"?` */
+export function didYouMean(key, allowed) {
+  const dist = (a, b) => {
+    const row = Array.from({ length: b.length + 1 }, (_, j) => j);
+    for (let i = 1; i <= a.length; i++) {
+      let prev = row[0];
+      row[0] = i;
+      for (let j = 1; j <= b.length; j++) {
+        const tmp = row[j];
+        row[j] = Math.min(row[j] + 1, row[j - 1] + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1));
+        prev = tmp;
+      }
+    }
+    return row[b.length];
+  };
+  let best = null;
+  let bestD = Infinity;
+  for (const name of allowed) {
+    const d = dist(String(key).toLowerCase(), String(name).toLowerCase());
+    if (d < bestD) { best = name; bestD = d; }
+  }
+  return best != null && bestD <= Math.max(2, Math.floor(String(key).length / 3)) ? ` Did you mean "${best}"?` : '';
+}
+
 /** Fail on keys that are not options, naming the key and listing the valid ones. */
 export function checkKeys(layer, where, allowed = validKeys()) {
   if (layer == null) return;
@@ -66,7 +90,7 @@ export function checkKeys(layer, where, allowed = validKeys()) {
   for (const key of Object.keys(layer)) {
     if (!allowed.includes(key)) {
       throw new ConfigError(
-        `${where}: unknown option "${key}". Valid options: ${[...allowed].sort().join(', ')}`,
+        `${where}: unknown option "${key}".${didYouMean(key, allowed)} Valid options: ${[...allowed].sort().join(', ')}`,
       );
     }
   }

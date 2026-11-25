@@ -89,7 +89,9 @@ export async function prepareExport(build, { log = () => {} } = {}) {
 
   const frameSvg = (f) => {
     const a = f.base != null ? states[f.base].markup : states[f.state].markup;
-    const markup = f.base != null ? `${a}<g opacity="${f.alpha.toFixed(4)}">${states[f.state].markup}</g>` : a;
+    const markup = f.base != null
+      ? `<g opacity="${(1 - f.alpha).toFixed(4)}">${a}</g><g opacity="${f.alpha.toFixed(4)}">${states[f.state].markup}</g>`
+      : a;
     const progress = f.progress == null ? null : (g) => progressStaticMarkup({
       x: g.margin, y: g.margin, width: g.winW, windowHeight: g.winH, fraction: f.progress, height: barHeight, fill, track,
     });
@@ -156,14 +158,18 @@ async function exportMp4(build, prep, opts, raster, outFile, tmp) {
     `fps=${opts.fps}`, evenPad(prep.background),
     'scale=out_color_matrix=bt709:out_range=tv', 'format=yuv420p',
   ].join(',');
+  // concat's last frame has no end time of its own: cap the output at the cast's frame count
+  // so the video is never longer than the cast by a stray frame
+  const outFrames = Math.max(1, Math.round(prep.total * opts.fps));
   const res = runFfmpeg([
-    '-f', 'concat', '-safe', '0', '-i', join(dir, 'list.txt'), '-vf', vf,
+    '-f', 'concat', '-safe', '0', '-i', join(dir, 'list.txt'), '-vf', vf, '-frames:v', String(outFrames),
     '-c:v', 'libx264', '-preset', 'medium', '-crf', '16', '-tune', 'animation',
     '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709',
     '-movflags', '+faststart', '-an', outFile,
   ]);
   if (!res.ok) throw new RenderError(`ffmpeg failed while writing the MP4:\n${res.detail}`);
-  return { frames: merged.length, unique: unique.size, seconds: merged.reduce((s, m) => s + m.units, 0) / 1000 };
+  // frames = what the video holds (constant frame rate), not the intermediate raster plan
+  return { frames: outFrames, fps: opts.fps, unique: unique.size, seconds: outFrames / opts.fps };
 }
 
 async function exportGif(build, prep, opts, raster, outFile, tmp, encoder, log) {
@@ -217,6 +223,7 @@ async function exportGif(build, prep, opts, raster, outFile, tmp, encoder, log) 
   }
   const bytes = await encodeGif(frames(), palette, { loop: !once });
   writeFileSync(outFile, bytes);
+  log(`note: pure-JS GIF is ${Math.round(bytes.length / 1024)} KB; ffmpeg writes far smaller GIFs (install it, or try --scale 1)`);
   log(`gif palette: ${exact ? `${palette.length} colours (exact)` : '256 colours (median cut over all frames)'}`);
   return { frames: merged.length, unique: unique.size, seconds: merged.reduce((s, m) => s + m.units, 0) / 100, encoder: 'gifenc' };
 }

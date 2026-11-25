@@ -15,11 +15,11 @@ npx skills add diegomarino/my-skills@cli-motion
 ## Requirements
 
 - Node 20+ (nothing else is required).
-- Network on first run: `npm ci` of the pinned dependencies into `${XDG_CACHE_HOME:-~/.cache}/cli-motion/<lock-hash>/` and svg-term via `npx svg-term-cli@2.1.1`.
+- Network on first run: `npm ci` of the pinned dependencies into `${XDG_CACHE_HOME:-~/.cache}/cli-motion/<lock-hash>/` including the pinned `svg-term-cli@2.1.1` (later runs need no network).
 - ffmpeg is optional: needed for MP4, and gives GIF its best encoder (GIF has a pure-JS fallback).
 - Nothing is written inside the skill folder and nothing is installed globally.
 
-The first render or export takes about 20–60 s (svg-term via npx, then rasterising). Run long exports in the background. After a dependency change the cache hash changes: run `cli-motion doctor --install` once.
+The first render or export takes about 20–60 s (the pinned svg-term from the cache, then rasterising). Run long exports in the background. After a dependency change the cache hash changes: run `cli-motion doctor --install` once.
 
 ## Quick start
 
@@ -40,16 +40,16 @@ Then embed it: `![demo](demo.svg)`. See [`examples/`](examples/README.md) for mo
 ## Commands
 
 ```bash
-node cli-motion/scripts/cli-motion.mjs render cli-motion/examples/quick-demo.scene.yaml
-node cli-motion/scripts/cli-motion.mjs still  cli-motion/examples/quick-demo.scene.yaml --at end
-node cli-motion/scripts/cli-motion.mjs export cli-motion/examples/quick-demo.scene.yaml   # GIF + MP4
+node cli-motion/scripts/cli-motion.mjs render cli-motion/examples/quick-demo.scene.yaml -o /tmp/out/quick-demo.svg
+node cli-motion/scripts/cli-motion.mjs still  cli-motion/examples/quick-demo.scene.yaml --at end -o /tmp/out/quick-demo.still.svg
+node cli-motion/scripts/cli-motion.mjs export cli-motion/examples/quick-demo.scene.yaml --out /tmp/out   # GIF + MP4 (--out is required inside the skill folder)
 node cli-motion/scripts/cli-motion.mjs themes
 node cli-motion/scripts/cli-motion.mjs doctor
 ```
 
 ![quick demo](examples/quick-demo.svg)
 
-First run installs the pinned dependencies (`yaml`, `figlet`, `@resvg/resvg-js`, `gifenc`, fonts …) into `${XDG_CACHE_HOME:-~/.cache}/cli-motion/<lock-hash>/` with `npm ci`; nothing is written inside the skill folder and nothing is global. svg-term is fetched by `npx svg-term-cli@2.1.1`.
+First run installs the pinned dependencies (`yaml`, `figlet`, `@resvg/resvg-js`, `gifenc`, fonts …) into `${XDG_CACHE_HOME:-~/.cache}/cli-motion/<lock-hash>/` with `npm ci`; nothing is written inside the skill folder and nothing is global. svg-term-cli@2.1.1 is one of those pinned dependencies and runs from the cache.
 
 ## Layout
 
@@ -73,6 +73,6 @@ cd cli-motion && node --test tests/*.test.mjs       # a bare tests/ directory ar
 node scripts/sync-themes.mjs --check                # themes match ../tui-design
 ```
 
-The first test run needs network once (npm ci into `~/.cache/cli-motion`, svg-term via npx).
+The first test run needs network once (npm ci into `~/.cache/cli-motion`, svg-term included).
 
 Themes come from [tui-design](../tui-design/) (MIT/Apache-2.0 palettes, each theme file keeps its license and sources). Options implemented in later releases (dark/light pairs) are already accepted in `assets/defaults.yaml` and marked there.

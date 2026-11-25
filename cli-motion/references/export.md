@@ -47,7 +47,7 @@ GIF size follows the number of distinct frames and their pixels:
 
 ## When to use
 
-GIF where only an image tag works (issues, chat, slides); MP4 where a video tag works (smaller, smoother); the animated SVG for READMEs and docs (smallest, sharpest, loops). Always set `window_background` first. The first export of a scene takes about 20–60 s (svg-term via npx, then rasterising): run it in the background and poll.
+GIF where only an image tag works (issues, chat, slides); MP4 where a video tag works (smaller, smoother); the animated SVG for READMEs and docs (smallest, sharpest, loops). Always set `window_background` first. The first export of a scene takes about 20–60 s (the pinned svg-term from the cache, then rasterising): run it in the background and poll.
 
 ## Needs
 
