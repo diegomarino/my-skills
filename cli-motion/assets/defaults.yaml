@@ -20,7 +20,7 @@ window: chrome                 # chrome (title bar + three dots) | plain (no tit
 window_title: null             # text in the title bar; null = the scene's `name:`
 window_shadow: true            # soft drop shadow (SVG filter)
 window_radius: 8               # px, rounded corners
-window_background: null        # outer colour around the window, e.g. "#ffffff" (GIF/MP4 cannot be transparent)
+window_background: null        # outer colour around the window, e.g. "#ffffff" (GIF/MP4 cannot be transparent; unset = white on light themes, #0d1117 on dark)
 padding: 18                    # px between the terminal text and the image edge
 width: 80                      # terminal columns
 height: auto                   # terminal rows, or auto (fits the tallest screen so nothing scrolls off)
@@ -32,7 +32,7 @@ prompt_cwd: "~/app"
 prompt_branch: main
 prompt_user: dev
 prompt_host: laptop
-prompt_time: "12:00"           # fixed so output stays byte-identical between runs
+prompt_time: "12:00"           # fixed so the typed prompt is the same between runs
 prompt_status: "✔"
 
 # ── cursor ──────────────────────────────────────────────────────────────────
@@ -68,17 +68,17 @@ enter_delay: 0.12              # pause between the last typed character and Ente
 prompt_delay: 0.4              # pause before a new prompt appears
 line_delay: 0.05               # pause between lines of an output block
 scene_hold: 1s                 # pause at the end of every scene except the last
-seed: 42                       # seeds the typing jitter: same scene + same seed = identical bytes
+seed: 42                       # seeds the typing jitter: same scene, seed and renderer = same cast and SVG (run: output can vary)
 
 # ── spinners and banners ────────────────────────────────────────────────────
 spinner: dots                  # dots | line | arc | bounce | bar (see assets/spinners.json)
 spinner_style: accent
 banner_font: standard          # any figlet font
 banner_style: accent
-banner_gradient: null          # null = figlet in banner_style; or ["#ff6ac1", "#57c7ff"] (2+ colours) = cfonts gradient; or a cfonts preset name (rainbow, pastel, vice, ...)
+banner_gradient: null          # null = figlet in banner_style; or ["#ff6ac1", "#57c7ff"] (2+ colours) = cfonts gradient; or one preset name: rainbow | pastel | vice | sunset | ocean | fire | forest | mono. With banner_effect: gradient-sweep the colours drive the sweep and figlet stays the engine
 banner_effect: none            # none (static) | type | wipe | lines | slide | rainbow | gradient-sweep | pulse | decrypt | glitch (references/banner-effects.md)
 banner_effect_duration: null   # seconds; null = the effect's own default (type 1.2s, wipe 0.8s, lines 0.8s, slide 0.7s, rainbow 2.4s, gradient-sweep 2.4s, pulse 1.6s, decrypt 1.4s, glitch 1.2s)
-banner_effect_fps: null        # frames per second; null = the effect's default (12 for colour/decrypt/glitch, 10-20 for reveals). Every frame adds SVG size: frames = fps × duration
+banner_effect_fps: null        # frames per second; null = the effect's default (12 for colour/decrypt/glitch, 10-20 for reveals). Every frame adds SVG size: samples = fps × duration (repeated states merge)
 banner_effect_direction: left  # slide only: left | right | top | bottom (the side the banner enters from)
 banner_effect_cycles: 1        # rainbow / gradient-sweep / pulse: how many times the colour loops over the duration
 

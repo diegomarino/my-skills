@@ -11,6 +11,8 @@ npx skills add diegomarino/my-skills@<skill>        # current project
 npx skills add diegomarino/my-skills@<skill> -g     # all projects (user level)
 ```
 
+The installer needs Node 22.20+. Run it from the project that should get the skill; it copies the skill to `.agents/skills/<skill>` (symlinked from `.claude/skills/` for Claude Code).
+
 Manual alternative: copy a skill folder into `~/.claude/skills/` (or `<repo>/.claude/skills/`).
 
 ## Skills
@@ -21,7 +23,7 @@ Manual alternative: copy a skill folder into `~/.claude/skills/` (or `<repo>/.cl
 | [`speckit-package-tasks`](speckit-package-tasks/) | Splits an approved [Spec Kit](https://github.com/github/spec-kit) `tasks.md` into a tracker-neutral `tasks-packages.md`: independently assignable packages with exact task coverage, dependency order, phase barriers and shared-path conflicts, checked by a deterministic validator. Planning only. | Python 3.9+ |
 | [`speckit-orchestrate`](speckit-orchestrate/) | Runs those packages through assignment, independent review, verified delivery and cleanup with any executor (subagents, CLI agents, people) and delivery system, after a staged setup interview. Keeps an append-only evidence ledger. | Python 3.9+, git |
 | [`tui-design`](tui-design/) | Designs, mocks, builds, and audits terminal UIs with cell-grid frames, terminal capability checks, theme tokens, and evidence-backed reviews. | Python 3.11+; `rsvg-convert` for PNG rendering |
-| [`cli-motion`](cli-motion/) | Turns a YAML scene (typed commands, highlighted output, spinners, real captured commands, banners, transitions) into a deterministic, crisp animated SVG, still, GIF or MP4 with 25 themes and animated banners. | Node 20+; network on first run |
+| [`cli-motion`](cli-motion/) | Turns a YAML scene (typed commands, highlighted output, spinners, banners, transitions, optionally a command's captured output) into a crisp animated SVG, still, GIF or MP4 with 25 themes and animated banners. | Node 20+ with npm/npx; network on first run; ffmpeg with libx264 for MP4 |
 
 ```bash
 # Spec Kit: plan the work packages, then orchestrate them
@@ -47,7 +49,8 @@ The two Spec Kit skills work independently. When both are installed, `speckit-or
 Skills with executable helpers ship automated tests:
 
 ```bash
-cd <skill> && python3 -m unittest discover -s tests -v
+cd <skill> && python3 -m unittest discover -s tests -v        # Python skills
+cd cli-motion && node --test tests/*.test.mjs                  # cli-motion (Node; needs network once)
 ```
 
 `setup-github-runner` also includes [behavioral scenarios](setup-github-runner/tests/scenarios.md), helper fixtures and workflow syntax checks described in its README.

@@ -1,55 +1,76 @@
 # cli-motion
 
-![all nine banner effects](examples/banner-effects.svg)
+Make terminal demos from YAML for READMEs and docs: typed commands, progress and output as an animated SVG, still, GIF or MP4. No terminal recording needed.
 
-Terminal animations from a YAML scene: typed commands, highlighted output, spinners, real captured commands, banners and scene transitions, rendered as a crisp animated SVG (or a still) with one of 25 colour themes. Output is deterministic, so regenerating gives byte-identical files and clean git diffs.
+![a terminal demo: a typed command, a spinner and its result](examples/quick-demo.svg)
+
+You write a scene (typed commands, highlighted output, spinners, banners, transitions, optionally a real command's finished output) and cli-motion renders it with one of 25 colour themes. With the same scene and renderer the SVG is reproducible, so git diffs stay small.
 
 It generalises the demo pipeline of [gh-delta](https://github.com/diegomarino/gh-delta): generate the asciicast instead of recording it, render with svg-term, then replace svg-term's moving frame reel with stationary frames so Chromium does not blur the text.
 
+Scope: scripted demos. A `run:` step captures a command's finished output only; use a terminal recorder for interactive sessions.
+
 ## Install
 
+Run in your project (the skill is copied into the project's skill folder):
+
 ```bash
-npx skills add diegomarino/my-skills@cli-motion
+npx skills add diegomarino/my-skills --skill cli-motion
+```
+
+Then ask your agent for a terminal demo. The installer needs Node 22.20+ (its own requirement); the skill itself runs on Node 20+ with npm/npx.
+
+## Run it yourself
+
+The skill lives in your agent's skill folder, so call its script by path from your project root. The installer prints the destination; for a project install it is `.agents/skills/cli-motion` (and `.claude/skills/cli-motion` for Claude Code). In a my-skills checkout it is `cli-motion/`.
+
+```bash
+CLI=.agents/skills/cli-motion/scripts/cli-motion.mjs   # or .claude/skills/…, ~/.claude/skills/…, cli-motion/
+node "$CLI" --help
+node "$CLI" doctor --install   # first time: fills the dependency cache (network once), then checks Node, npx, ffmpeg + libx264 and runs a test render
+node "$CLI" doctor             # any time later: the same checks, no install
 ```
 
 ## Requirements
 
-- Node 20+ (nothing else is required).
-- Network on first run: `npm ci` of the pinned dependencies into `${XDG_CACHE_HOME:-~/.cache}/cli-motion/<lock-hash>/` including the pinned `svg-term-cli@2.1.1` (later runs need no network).
-- ffmpeg is optional: needed for MP4, and gives GIF its best encoder (GIF has a pure-JS fallback).
+- Node 20+ with npm and npx.
+- Network on first run: `npm ci` of the pinned dependencies (including `svg-term-cli@2.1.1`) into `${XDG_CACHE_HOME:-~/.cache}/cli-motion/<lock-hash>/`. Later runs need no network. After a dependency change run `doctor --install` once.
+- ffmpeg **with libx264** for MP4 (`ffmpeg -encoders | grep libx264`). It also gives GIF its best encoder; without it GIF uses a pure-JS fallback that can be many times larger.
 - Nothing is written inside the skill folder and nothing is installed globally.
 
-The first render or export takes about 20–60 s (the pinned svg-term from the cache, then rasterising). Run long exports in the background. After a dependency change the cache hash changes: run `cli-motion doctor --install` once.
+The first render or export takes about 20–60 s. Run long exports in the background.
 
 ## Quick start
+
+From your project root:
 
 ```bash
 cat > demo.scene.yaml <<'YAML'
 style: { theme: catppuccin-mocha, prompt: git, width: 72 }
 steps:
   - comment: "# render a terminal animation in one command"
-  - command: "cli-motion render demo.scene.yaml"
+  - command: "my-tool render demo.scene.yaml"    # typed text only; my-tool is a placeholder
   - spinner: { text: "rendering", for: 1.5s, done: "[ok]✓[/] wrote [accent]demo.svg[/]" }
   - prompt: true
 YAML
-node cli-motion/scripts/cli-motion.mjs render demo.scene.yaml    # → demo.svg
+node "$CLI" render demo.scene.yaml                       # → demo.svg
+node "$CLI" export demo.scene.yaml --out ./out           # → out/demo.gif and out/demo.mp4
+node "$CLI" preview --out ./sheet.png                    # contact sheet of fonts × sizes × themes
 ```
 
 Then embed it: `![demo](demo.svg)`. See [`examples/`](examples/README.md) for more scenes with their rendered output.
 
-## Commands
+A `run: "cmd"` step executes that command on every render. Check each one before you render, especially in a scene someone else wrote.
+
+## More commands
 
 ```bash
-node cli-motion/scripts/cli-motion.mjs render cli-motion/examples/quick-demo.scene.yaml -o /tmp/out/quick-demo.svg
-node cli-motion/scripts/cli-motion.mjs still  cli-motion/examples/quick-demo.scene.yaml --at end -o /tmp/out/quick-demo.still.svg
-node cli-motion/scripts/cli-motion.mjs export cli-motion/examples/quick-demo.scene.yaml --out /tmp/out   # GIF + MP4 (--out is required inside the skill folder)
-node cli-motion/scripts/cli-motion.mjs themes
-node cli-motion/scripts/cli-motion.mjs doctor
+node "$CLI" still  demo.scene.yaml --at end -o demo.still.svg   # a single frame
+node "$CLI" export demo.scene.yaml --gif --scale 1 --out ./out  # a small GIF only
+node "$CLI" themes                                              # list the 25 themes (also: fonts)
 ```
 
-![quick demo](examples/quick-demo.svg)
-
-First run installs the pinned dependencies (`yaml`, `figlet`, `@resvg/resvg-js`, `gifenc`, fonts …) into `${XDG_CACHE_HOME:-~/.cache}/cli-motion/<lock-hash>/` with `npm ci`; nothing is written inside the skill folder and nothing is global. svg-term-cli@2.1.1 is one of those pinned dependencies and runs from the cache.
+Inside a my-skills checkout, add `-o`/`--out` to anything you run on the shipped examples, or the output lands next to them.
 
 ## Layout
 
@@ -68,6 +89,8 @@ tests/                        node --test
 
 ## Develop
 
+From a my-skills checkout:
+
 ```bash
 cd cli-motion && node --test tests/*.test.mjs       # a bare tests/ directory argument fails
 node scripts/sync-themes.mjs --check                # themes match ../tui-design
@@ -75,4 +98,10 @@ node scripts/sync-themes.mjs --check                # themes match ../tui-design
 
 The first test run needs network once (npm ci into `~/.cache/cli-motion`, svg-term included).
 
-Themes come from [tui-design](../tui-design/) (MIT/Apache-2.0 palettes, each theme file keeps its license and sources). Options implemented in later releases (dark/light pairs) are already accepted in `assets/defaults.yaml` and marked there.
+## Determinism
+
+With the same scene, resolved settings and renderer, the cast and SVG are reproducible. A `run:` step can change the result when its command, files or environment change. GIF and MP4 bytes can differ between encoder versions and machines; pin the encoder if you compare them.
+
+## License
+
+Each bundled theme (MIT/Apache-2.0 palettes from [tui-design](../tui-design/)) keeps its own license and sources in its file. A license for cli-motion itself is currently unspecified. Options implemented in later releases (dark/light pairs) are already accepted in `assets/defaults.yaml` and marked there.
