@@ -1,0 +1,45 @@
+{
+  "id": "dracula-alucard",
+  "name": "Dracula Alucard",
+  "appearance": "light",
+  "license": "MIT (repo license; Alucard Classic palette published in OSS spec)",
+  "sources": {
+    "palette": "https://github.com/dracula/draculatheme.com/blob/main/content/spec.mdx",
+    "terminal": "https://github.com/dracula/draculatheme.com/blob/main/content/spec.mdx",
+    "style_guide": "https://github.com/dracula/draculatheme.com/blob/main/content/spec.mdx"
+  },
+  "terminal": {
+    "background": "#fffbeb",
+    "foreground": "#1f1f1f",
+    "cursor": null,
+    "cursor_text": null,
+    "selection_background": "#cfcfde",
+    "selection_foreground": null,
+    "ansi": [
+      "#fffbeb",
+      "#cb3a2a",
+      "#14710a",
+      "#846e15",
+      "#644ac9",
+      "#a3144d",
+      "#036a96",
+      "#1f1f1f",
+      "#6c664b",
+      "#d74c3d",
+      "#198d0c",
+      "#9e841a",
+      "#7862d0",
+      "#bf185a",
+      "#047fb4",
+      "#2c2b31"
+    ]
+  },
+  "accents": {
+    "accent": "#644ac9",
+    "accent2": "#a3144d",
+    "success": "#14710a",
+    "warning": "#a34d14",
+    "error": "#cb3a2a",
+    "info": "#036a96"
+  }
+}

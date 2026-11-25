@@ -1,0 +1,46 @@
+{
+  "id": "onedark-dark",
+  "name": "One Dark",
+  "appearance": "dark",
+  "license": "MIT",
+  "sources": {
+    "palette": "https://github.com/joshdick/onedark.vim/blob/main/autoload/onedark.vim",
+    "terminal": "https://github.com/joshdick/onedark.vim/blob/main/term/One%20Dark.kitty",
+    "style_guide": null,
+    "terminal_alt": "https://github.com/joshdick/onedark.vim/blob/main/term/One%20Dark.Xresources (cursor) + term/One Dark.alacritty (selection)"
+  },
+  "terminal": {
+    "background": "#282c34",
+    "foreground": "#abb2bf",
+    "cursor": "#abb2bf",
+    "cursor_text": "#2c323c",
+    "selection_background": "#3e4452",
+    "selection_foreground": null,
+    "ansi": [
+      "#2c323c",
+      "#e06c75",
+      "#98c379",
+      "#e5c07b",
+      "#61afef",
+      "#c678dd",
+      "#56b6c2",
+      "#5c6370",
+      "#3e4452",
+      "#e06c75",
+      "#98c379",
+      "#e5c07b",
+      "#61afef",
+      "#c678dd",
+      "#56b6c2",
+      "#abb2bf"
+    ]
+  },
+  "accents": {
+    "accent": "#61afef",
+    "accent2": "#c678dd",
+    "success": "#98c379",
+    "warning": "#e5c07b",
+    "error": "#e06c75",
+    "info": "#56b6c2"
+  }
+}

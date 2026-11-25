@@ -1,0 +1,1 @@
+{ "name": "powerline", "template": null, "requires": "fonts", "description": "oh-my-posh style segments. Needs a Nerd Font; arrives with the fonts task." }

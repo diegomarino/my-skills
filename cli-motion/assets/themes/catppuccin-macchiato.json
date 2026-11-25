@@ -1,0 +1,45 @@
+{
+  "id": "catppuccin-macchiato",
+  "name": "Catppuccin Macchiato",
+  "appearance": "dark",
+  "license": "MIT (catppuccin/palette, catppuccin/kitty)",
+  "sources": {
+    "palette": "https://github.com/catppuccin/palette/blob/main/palette.json",
+    "terminal": "https://github.com/catppuccin/kitty/blob/main/themes/macchiato.conf",
+    "style_guide": "https://github.com/catppuccin/catppuccin/blob/main/docs/style-guide.md"
+  },
+  "terminal": {
+    "background": "#24273a",
+    "foreground": "#cad3f5",
+    "cursor": "#f4dbd6",
+    "cursor_text": "#24273a",
+    "selection_background": "#f4dbd6",
+    "selection_foreground": "#24273a",
+    "ansi": [
+      "#494d64",
+      "#ed8796",
+      "#a6da95",
+      "#eed49f",
+      "#8aadf4",
+      "#f5bde6",
+      "#8bd5ca",
+      "#b8c0e0",
+      "#5b6078",
+      "#ed8796",
+      "#a6da95",
+      "#eed49f",
+      "#8aadf4",
+      "#f5bde6",
+      "#8bd5ca",
+      "#a5adcb"
+    ]
+  },
+  "accents": {
+    "accent": "#8aadf4",
+    "accent2": "#c6a0f6",
+    "success": "#a6da95",
+    "warning": "#eed49f",
+    "error": "#ed8796",
+    "info": "#8bd5ca"
+  }
+}

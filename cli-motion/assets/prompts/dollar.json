@@ -1,0 +1,1 @@
+{ "name": "dollar", "template": "[prompt]$[/] ", "description": "Classic POSIX $." }

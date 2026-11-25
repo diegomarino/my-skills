@@ -1,0 +1,45 @@
+{
+  "id": "dracula-classic",
+  "name": "Dracula",
+  "appearance": "dark",
+  "license": "MIT",
+  "sources": {
+    "palette": "https://github.com/dracula/dracula-theme/blob/main/README.md",
+    "terminal": "https://github.com/dracula/kitty/blob/master/dracula.conf",
+    "style_guide": "https://github.com/dracula/draculatheme.com/blob/main/content/spec.mdx"
+  },
+  "terminal": {
+    "background": "#282a36",
+    "foreground": "#f8f8f2",
+    "cursor": "#f8f8f2",
+    "cursor_text": "#282a36",
+    "selection_background": "#44475a",
+    "selection_foreground": "#ffffff",
+    "ansi": [
+      "#21222c",
+      "#ff5555",
+      "#50fa7b",
+      "#f1fa8c",
+      "#bd93f9",
+      "#ff79c6",
+      "#8be9fd",
+      "#f8f8f2",
+      "#6272a4",
+      "#ff6e6e",
+      "#69ff94",
+      "#ffffa5",
+      "#d6acff",
+      "#ff92df",
+      "#a4ffff",
+      "#ffffff"
+    ]
+  },
+  "accents": {
+    "accent": "#bd93f9",
+    "accent2": "#ff79c6",
+    "success": "#50fa7b",
+    "warning": "#ffb86c",
+    "error": "#ff5555",
+    "info": "#8be9fd"
+  }
+}

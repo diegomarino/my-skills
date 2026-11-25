@@ -1,0 +1,45 @@
+{
+  "id": "tokyonight-storm",
+  "name": "Tokyo Night Storm",
+  "appearance": "dark",
+  "license": "Apache-2.0 (folke/tokyonight.nvim LICENSE); extras kitty header says \"license: MIT\"",
+  "sources": {
+    "palette": "https://github.com/folke/tokyonight.nvim/blob/main/extras/lua/tokyonight_storm.lua",
+    "terminal": "https://github.com/folke/tokyonight.nvim/blob/main/extras/kitty/tokyonight_storm.conf",
+    "style_guide": null
+  },
+  "terminal": {
+    "background": "#24283b",
+    "foreground": "#c0caf5",
+    "cursor": "#c0caf5",
+    "cursor_text": "#24283b",
+    "selection_background": "#2e3c64",
+    "selection_foreground": "#c0caf5",
+    "ansi": [
+      "#1d202f",
+      "#f7768e",
+      "#9ece6a",
+      "#e0af68",
+      "#7aa2f7",
+      "#bb9af7",
+      "#7dcfff",
+      "#a9b1d6",
+      "#414868",
+      "#ff899d",
+      "#9fe044",
+      "#faba4a",
+      "#8db0ff",
+      "#c7a9ff",
+      "#a4daff",
+      "#c0caf5"
+    ]
+  },
+  "accents": {
+    "accent": "#7aa2f7",
+    "accent2": "#bb9af7",
+    "success": "#9ece6a",
+    "warning": "#e0af68",
+    "error": "#f7768e",
+    "info": "#0db9d7"
+  }
+}
