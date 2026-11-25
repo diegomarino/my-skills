@@ -96,7 +96,7 @@ export function svgTermBin(opts) {
   const pkgFile = join(dir, 'node_modules', 'svg-term-cli', 'package.json');
   if (!existsSync(pkgFile)) {
     throw new Error(
-      `svg-term-cli is missing from the dependency cache ${dir}. Run \`cli-motion doctor --install\` (needs network once); delete the folder first if it persists.`,
+      `svg-term-cli is missing from the dependency cache ${dir}. Run \`node ${process.argv[1]} doctor --install\` (needs network once); delete the folder first if it persists.`,
     );
   }
   const bin = JSON.parse(readFileSync(pkgFile, 'utf8')).bin;

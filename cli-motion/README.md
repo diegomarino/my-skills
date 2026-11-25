@@ -27,7 +27,8 @@ The skill lives in your agent's skill folder, so call its script by path from yo
 ```bash
 CLI=.agents/skills/cli-motion/scripts/cli-motion.mjs   # or .claude/skills/…, ~/.claude/skills/…, cli-motion/
 node "$CLI" --help
-node "$CLI" doctor        # Node, npx, ffmpeg + libx264, dependency cache, a test render
+node "$CLI" doctor --install   # first time: fills the dependency cache (network once), then checks Node, npx, ffmpeg + libx264 and runs a test render
+node "$CLI" doctor             # any time later: the same checks, no install
 ```
 
 ## Requirements

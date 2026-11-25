@@ -17,7 +17,7 @@ CLI=.claude/skills/cli-motion/scripts/cli-motion.mjs    # adjust to <skill-dir>
 node "$CLI" --help                                       # command and flag syntax
 ```
 
-Run `themes` or `fonts` to list valid values. Option defaults are in `assets/defaults.yaml`.
+On a machine that has never run it, `node "$CLI" doctor --install` fills the dependency cache first (network once); a plain `doctor` on an empty cache reports it as missing. Run `themes` or `fonts` to list valid values. Option defaults are in `assets/defaults.yaml`.
 
 ## Workflow: scene → format
 

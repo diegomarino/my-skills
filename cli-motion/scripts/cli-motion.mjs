@@ -237,10 +237,10 @@ function cmdDoctor(args) {
   if (cache.ready) {
     ok('cache', `${cache.dir} (dependencies installed)`);
     const probe = probeSvgTerm();
-    probe.ok ? ok('svg-term', probe.detail) : bad('svg-term', `${probe.detail}. Run \`node scripts/cli-motion.mjs doctor --install\` (needs network once)`);
+    probe.ok ? ok('svg-term', probe.detail) : bad('svg-term', `${probe.detail}. Run \`node ${process.argv[1]} doctor --install\` (needs network once)`);
     renderer = probe.ok;
   } else {
-    bad('cache', `${cache.dir} is empty: nothing can render yet. Run \`node scripts/cli-motion.mjs doctor --install\` (needs network once)`);
+    bad('cache', `${cache.dir} is empty: nothing can render yet. Run \`node ${process.argv[1]} doctor --install\` (needs network once)`);
     bad('svg-term', 'not available until the cache is installed');
   }
 
