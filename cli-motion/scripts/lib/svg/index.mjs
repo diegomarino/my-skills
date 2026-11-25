@@ -4,12 +4,13 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { svgTermBin } from '../deps.mjs';
 import { fontFaceCss, fontInfo, FONT_FALLBACK_STACK, needsNerd, subsetFaces, textCodepoints } from '../fonts/index.mjs';
 import { applyFrame } from './frame.mjs';
 import { progressColours, progressMarkup } from './progress.mjs';
 import { stabilizeSvgAnimation } from './stabilize.mjs';
 
-export const SVG_TERM = 'svg-term-cli@2.1.1';
+export const SVG_TERM = 'svg-term-cli@2.1.1'; // pinned in scripts/package.json, run from the dependency cache
 
 export class RenderError extends Error {
   constructor(message) {
@@ -39,18 +40,22 @@ export function runSvgTerm({ castText, theme, style, at }) {
     const out = join(dir, 'out.svg');
     writeFileSync(cast, castText);
     writeFileSync(profile, xresources(theme));
+    let bin;
+    try {
+      bin = svgTermBin();
+    } catch (err) {
+      throw new RenderError(err.message);
+    }
     const args = [
-      '-y', SVG_TERM, '--in', cast, '--out', out, '--profile', profile, '--term', 'xresources',
+      bin, '--in', cast, '--out', out, '--profile', profile, '--term', 'xresources',
       '--padding', '0', '--no-cursor',
     ];
     if (at != null) args.push('--at', String(at));
-    const npx = process.platform === 'win32' ? 'npx.cmd' : 'npx';
-    const res = spawnSync(npx, args, { encoding: 'utf8', env: { ...process.env, npm_config_loglevel: 'error' } });
+    const res = spawnSync(process.execPath, args, { encoding: 'utf8', timeout: 120000 });
     if (res.error || res.status !== 0) {
-      const detail = (res.stderr || res.stdout || res.error?.message || '').split('\n')
-        .filter((l) => l && !/^npm (warn|notice)/.test(l)).join('\n');
+      const detail = (res.stderr || res.stdout || res.error?.message || '').trim();
       throw new RenderError(
-        `svg-term failed (${SVG_TERM} via npx; needs Node and network on first run).\n${detail}`,
+        `svg-term failed (${SVG_TERM}, run from the dependency cache; no network needed). Run \`cli-motion doctor\` to check it.\n${detail}`,
       );
     }
     return readFileSync(out, 'utf8');

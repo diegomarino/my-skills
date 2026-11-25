@@ -3,7 +3,7 @@
 Each example is a scene file and its rendered output. Regenerate any of them from the skill folder, for example:
 
 ```bash
-node scripts/cli-motion.mjs render examples/quick-demo.scene.yaml
+node scripts/cli-motion.mjs render examples/quick-demo.scene.yaml -o /tmp/out/quick-demo.svg   # -o/--out is required for scenes inside the skill folder
 node scripts/cli-motion.mjs export examples/quick-demo.scene.yaml --out /tmp/out
 ```
 

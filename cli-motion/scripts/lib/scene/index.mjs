@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { dep } from '../deps.mjs';
 import {
-  ASSETS_DIR, ConfigError, applySceneStyle, checkKeys, loadTheme, parseYaml, resolveStyle,
+  ASSETS_DIR, ConfigError, applySceneStyle, checkKeys, didYouMean, loadTheme, parseYaml, resolveStyle,
 } from '../config/index.mjs';
 import { fontInfo } from '../fonts/index.mjs';
 import { Cast } from './cast.mjs';
@@ -99,7 +99,7 @@ function normaliseStep(step, where) {
   const allowed = [...ACTIONS[action], ...COMMON];
   for (const key of Object.keys(opts)) {
     if (!allowed.includes(key)) {
-      throw new SceneError(`${where}: unknown option "${key}" for \`${action}\`. Valid options: ${allowed.join(', ')}`);
+      throw new SceneError(`${where}: unknown option "${key}" for \`${action}\`.${didYouMean(key, allowed)} Valid options: ${allowed.join(', ')}`);
     }
   }
   return { action, text, opts };
@@ -112,7 +112,7 @@ export function parseSceneDocument(text, file = 'scene') {
   }
   for (const key of Object.keys(doc)) {
     if (!TOP_KEYS.includes(key)) {
-      throw new SceneError(`${file}: unknown top-level key "${key}". Valid keys: ${TOP_KEYS.join(', ')}`);
+      throw new SceneError(`${file}: unknown top-level key "${key}".${didYouMean(key, TOP_KEYS)} Valid keys: ${TOP_KEYS.join(', ')}`);
     }
   }
   if (doc.scenes && doc.steps) throw new SceneError(`${file}: use either \`scenes:\` or \`steps:\`, not both`);
@@ -126,7 +126,7 @@ export function parseSceneDocument(text, file = 'scene') {
     }
     for (const key of Object.keys(scene)) {
       if (!SCENE_KEYS.includes(key)) {
-        throw new SceneError(`${file}: scenes[${i}]: unknown key "${key}". Valid keys: ${SCENE_KEYS.join(', ')}`);
+        throw new SceneError(`${file}: scenes[${i}]: unknown key "${key}".${didYouMean(key, SCENE_KEYS)} Valid keys: ${SCENE_KEYS.join(', ')}`);
       }
     }
     if (scene.steps != null && !Array.isArray(scene.steps)) {
@@ -584,7 +584,7 @@ class Director {
 
 function checkKeysScene(obj, allowed, where) {
   for (const key of Object.keys(obj ?? {})) {
-    if (!allowed.includes(key)) throw new SceneError(`${where}: unknown key "${key}". Valid keys: ${allowed.join(', ')}`);
+    if (!allowed.includes(key)) throw new SceneError(`${where}: unknown key "${key}".${didYouMean(key, allowed)} Valid keys: ${allowed.join(', ')}`);
   }
 }
 

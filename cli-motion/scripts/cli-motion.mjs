@@ -7,9 +7,10 @@
 //   cli-motion doctor [--install]
 
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, statSync, writeFileSync } from 'node:fs';
-import { basename, dirname, join, resolve } from 'node:path';
-import { cacheState, ensureDeps } from './lib/deps.mjs';
+import { mkdirSync, mkdtempSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path';
+import { SKILL_DIR, cacheState, ensureDeps, svgTermBin } from './lib/deps.mjs';
 import { ffmpegInfo } from './lib/raster/ffmpeg.mjs';
 
 const USAGE = `cli-motion: terminal animations from a YAML scene
@@ -78,6 +79,14 @@ async function loadBuild(sceneFile) {
   return loadScene(sceneFile);
 }
 
+/** Refuse to write beside a scene that lives inside the skill folder unless the caller chose the path. */
+function guardOutput(path, explicit, flag) {
+  const rel = relative(SKILL_DIR, path);
+  if (!explicit && !rel.startsWith('..') && !isAbsolute(rel)) {
+    throw new UsageError(`${path} is inside the skill folder (${SKILL_DIR}), where it would overwrite shipped files. Pass ${flag} <path outside the skill> (use ${flag} with the same path to regenerate a shipped example on purpose).`);
+  }
+}
+
 function writeOut(path, data) {
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, data);
@@ -90,6 +99,7 @@ async function cmdRender(args, still) {
   const svgLib = await import('./lib/svg/index.mjs');
   const dir = dirname(build.file);
   const out = resolve(args.flags.out ?? join(dir, `${sceneBase(sceneFile)}${still ? '.still' : ''}.svg`));
+  guardOutput(out, args.flags.out != null, '-o');
   const svg = still ? await svgLib.renderStill(build, args.flags.at ?? 'end') : await svgLib.renderAnimated(build);
   writeOut(out, svg);
   if (args.flags.cast) {
@@ -99,11 +109,11 @@ async function cmdRender(args, still) {
   }
   const kb = (Buffer.byteLength(svg) / 1024).toFixed(1);
   for (const e of build.bannerEffects ?? []) {
-    console.error(`cli-motion: banner effect ${e.effect}: ${e.frames} frames (${e.fps} fps × ${e.duration}s) at ${e.where.replace(/^.*?: /, '')}`);
+    console.error(`cli-motion: banner effect ${e.effect}: ${e.frames} distinct frames kept of ${e.requested} samples (${e.fps} fps × ${e.duration}s; repeated states merge) at ${e.where.replace(/^.*?: /, '')}`);
   }
   if (build.bannerEffects?.length) {
     const frames = build.bannerEffects.reduce((n, e) => n + e.frames, 0);
-    console.error(`cli-motion: banner effects added ${frames} frames; SVG is ${kb} KB. Lower fps or duration (or use a reveal effect) to shrink it.`);
+    console.error(`cli-motion: banner effects added ${frames} distinct frames; SVG is ${kb} KB. Lower fps or duration (or use a reveal effect) to shrink it.`);
   }
   console.log(`${out} (${kb} KB, ${build.duration.toFixed(1)}s, ${build.header.width}x${build.header.height} cells, ${build.style.theme})`);
 }
@@ -122,6 +132,7 @@ async function cmdExport(args) {
     console.error('cli-motion: ffmpeg not found: skipping MP4 (writing the GIF with the pure-JS encoder)');
   }
   const outDir = resolve(args.flags.out ?? dirname(build.file));
+  guardOutput(outDir, args.flags.out != null, '--out');
   const results = await exportScene(build, {
     gif, mp4, outDir, base: sceneBase(sceneFile), encoder: args.flags.encoder ?? 'auto',
     flags: { scale: args.flags.scale, fps: args.flags.fps },
@@ -129,7 +140,8 @@ async function cmdExport(args) {
   });
   for (const r of results) {
     const kb = (statSync(r.file).size / 1024).toFixed(0);
-    console.log(`${r.file} (${r.format}${r.encoder ? `, ${r.encoder}` : ''}, ${kb} KB, ${r.seconds.toFixed(2)}s, ${r.frames} frames, ${r.unique} distinct)`);
+    const what = r.format === 'mp4' ? `${r.frames} video frames at ${r.fps ?? 30} fps` : `${r.frames} GIF frames`;
+    console.log(`${r.file} (${r.format}${r.encoder ? `, ${r.encoder}` : ''}, ${kb} KB, ${r.seconds.toFixed(2)}s, ${what}, ${r.unique} distinct images)`);
   }
 }
 
@@ -180,6 +192,22 @@ async function cmdPreview(args) {
   console.log(`${out} (${cells.length} cells: ${fonts.length} fonts × ${sizes.length} sizes × ${themes.length} themes)`);
 }
 
+/** Run the pinned svg-term on a one-event cast: proves the renderer starts, offline. */
+function probeSvgTerm() {
+  const dir = mkdtempSync(join(tmpdir(), 'cli-motion-doctor-'));
+  try {
+    const cast = join(dir, 'p.cast');
+    writeFileSync(cast, `${JSON.stringify({ version: 2, width: 10, height: 2 })}\n${JSON.stringify([0.1, 'o', 'ok'])}\n`);
+    const res = spawnSync(process.execPath, [svgTermBin(), '--in', cast, '--out', join(dir, 'p.svg'), '--padding', '0'], { encoding: 'utf8', timeout: 30000 });
+    if (res.status !== 0) return { ok: false, detail: (res.stderr || res.stdout || res.error?.message || `exit ${res.status}`).trim().split('\n')[0] };
+    return { ok: statSync(join(dir, 'p.svg')).size > 0, detail: 'svg-term-cli@2.1.1 rendered a test cast from the cache (no network used)' };
+  } catch (err) {
+    return { ok: false, detail: err.message };
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
 function cmdDoctor(args) {
   const major = Number(process.versions.node.split('.')[0]);
   const rows = [];
@@ -192,16 +220,10 @@ function cmdDoctor(args) {
   const ff = ffmpegInfo();
   ff.ffmpeg
     ? ok('ffmpeg', ff.ffmpeg)
-    : warn('ffmpeg', 'not found: optional, only needed for MP4 export (GIF has a pure-JS fallback)');
-  const formats = [
-    'svg (animated), svg still, png preview: always',
-    ff.ffmpeg && ff.libx264 ? 'mp4: yes (ffmpeg + libx264)' : ff.ffmpeg ? 'mp4: no (this ffmpeg lacks libx264)' : 'mp4: no (needs ffmpeg)',
-    ff.ffmpeg ? 'gif: yes (ffmpeg, one global palette; --encoder js for pure JS)' : 'gif: yes (pure-JS gifenc, one global palette)',
-  ];
-  ok('export', formats.join('; '));
+    : warn('ffmpeg', 'not found: optional, only needed for MP4 export (GIF has a pure-JS fallback, with much larger files)');
 
-  const npx = spawnSync(process.platform === 'win32' ? 'npx.cmd' : 'npx', ['--version'], { encoding: 'utf8' });
-  npx.status === 0 ? ok('npx', `v${npx.stdout.trim()} (runs the pinned svg-term-cli@2.1.1)`) : bad('npx', 'not found: install Node with npm');
+  const npm = spawnSync(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['--version'], { encoding: 'utf8' });
+  npm.status === 0 ? ok('npm', `v${npm.stdout.trim()} (only used to install the dependency cache)`) : warn('npm', 'not found: needed once to install dependencies into the cache');
 
   if (args.flags.install) {
     try {
@@ -211,11 +233,27 @@ function cmdDoctor(args) {
     }
   }
   const cache = cacheState();
-  cache.ready
-    ? ok('cache', `${cache.dir} (dependencies installed)`)
-    : warn('cache', `${cache.dir} (empty: installs on first render, or run \`cli-motion doctor --install\`; needs network once)`);
+  let renderer = false;
+  if (cache.ready) {
+    ok('cache', `${cache.dir} (dependencies installed)`);
+    const probe = probeSvgTerm();
+    probe.ok ? ok('svg-term', probe.detail) : bad('svg-term', `${probe.detail}. Run \`node scripts/cli-motion.mjs doctor --install\` (needs network once)`);
+    renderer = probe.ok;
+  } else {
+    bad('cache', `${cache.dir} is empty: nothing can render yet. Run \`node scripts/cli-motion.mjs doctor --install\` (needs network once)`);
+    bad('svg-term', 'not available until the cache is installed');
+  }
 
-  for (const [level, label, detail] of rows) console.log(`${level}  ${label.padEnd(7)} ${detail}`);
+  const formats = renderer
+    ? [
+      'verified here: animated svg, svg still, png preview',
+      ff.ffmpeg && ff.libx264 ? 'mp4: yes (ffmpeg + libx264)' : ff.ffmpeg ? 'mp4: no (this ffmpeg lacks libx264)' : 'mp4: no (needs ffmpeg)',
+      ff.ffmpeg ? 'gif: yes (ffmpeg, one global palette; --encoder js for pure JS)' : 'gif: yes (pure-JS gifenc, one global palette, larger files)',
+    ]
+    : ['nothing can be written until svg-term is available (see above)'];
+  renderer ? ok('export', formats.join('; ')) : bad('export', formats.join('; '));
+
+  for (const [level, label, detail] of rows) console.log(`${level}  ${label.padEnd(8)} ${detail}`);
   if (rows.some((r) => r[0] === 'FAIL')) process.exitCode = 1;
 }
 

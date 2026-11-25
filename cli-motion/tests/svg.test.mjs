@@ -53,9 +53,11 @@ test('once: plays a single time and holds the last frame; no restart', async () 
   assert.ok(css.endsWith('100%{visibility:visible}}'), css);
 });
 
-test('fade: an opacity ramp on the next scene while the old frame stays painted', async () => {
+test('fade: cross-fade, the old frame ramps out while the next scene ramps in', async () => {
   const out = await render('scenes:\n  - steps: [{comment: one}]\n  - transition: fade\n    steps: [{command: x}]\n');
-  assert.match(out, /@keyframes fade-\d+\{0%,[\d.]+%\{opacity:0\}[\d.]+%\{opacity:1\}100%\{opacity:1\}\}/);
+  assert.match(out, /@keyframes fade-\d+\{0%\{opacity:0\}[\d.]+%\{opacity:0\}[\d.]+%\{opacity:1\}100%\{opacity:1\}\}/, 'incoming ramps in');
+  assert.match(out, /@keyframes fade-\d+\{0%\{opacity:1\}[\d.]+%\{opacity:1\}[\d.]+%\{opacity:0\}100%\{opacity:0\}\}/, 'outgoing ramps out');
+  // pixel-level proof lives in fade.test.mjs
   assert.ok(!out.includes('translateX'));
 });
 
