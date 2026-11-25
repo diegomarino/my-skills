@@ -58,11 +58,23 @@ function runSvgTerm({ castText, theme, style, at }) {
   }
 }
 
+/**
+ * Round the outer size up to whole pixels and size the background rect to match, so
+ * the image has no fractional edge (a sliver of page showing through, blurry GIF/MP4).
+ */
+export function wholePixels(svg) {
+  const root = svg.match(/^(<svg [^>]*?)width="([\d.]+)" height="([\d.]+)"([^>]*>)<rect width="[\d.]+" height="[\d.]+"/);
+  if (!root) return svg;
+  const w = Math.ceil(Number(root[2]));
+  const h = Math.ceil(Number(root[3]));
+  return svg.replace(root[0], `${root[1]}width="${w}" height="${h}"${root[4]}<rect width="${w}" height="${h}"`);
+}
+
 /** Animated SVG for a built scene. */
 export function renderAnimated(build) {
   const { style, theme } = build;
   const once = style.playback === 'once';
-  let svg = runSvgTerm({ castText: build.castText, theme, style });
+  let svg = wholePixels(runSvgTerm({ castText: build.castText, theme, style }));
   svg = stabilizeSvgAnimation(svg, { once, fades: build.fades, duration: build.duration });
   if (style.progress_bar) {
     const { fill, track } = progressColours(style, theme);
@@ -77,5 +89,5 @@ export function renderAnimated(build) {
 export function renderStill(build, at = 'end') {
   const ms = at === 'end' ? build.endMs : Number(at);
   if (!Number.isFinite(ms) || ms < 0) throw new RenderError(`--at must be milliseconds or "end", got "${at}"`);
-  return runSvgTerm({ castText: build.castText, theme: build.theme, style: build.style, at: ms });
+  return wholePixels(runSvgTerm({ castText: build.castText, theme: build.theme, style: build.style, at: ms }));
 }

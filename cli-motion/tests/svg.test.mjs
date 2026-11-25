@@ -84,3 +84,13 @@ test('progress bar is clipped to the window shape (same rx/ry as the background)
   const bareRx = bare.match(/<rect width="[\d.]+" height="[\d.]+" rx="([\d.]+)" ry="[\d.]+" class="a"\/>/)[1];
   assert.match(bare, new RegExp(`<clipPath id="cm-clip"><rect [^>]*rx="${bareRx}"`));
 });
+
+test('outer size is whole pixels and the background and progress bar match it', () => {
+  for (const out of [render(SIMPLE), render(SIMPLE, svg.renderStill)]) {
+    const [, w, h] = out.match(/^<svg [^>]*width="([\d.]+)" height="([\d.]+)"/);
+    assert.ok(Number.isInteger(Number(w)) && Number.isInteger(Number(h)), `${w}x${h}`);
+    assert.ok(out.includes(`<rect width="${w}" height="${h}" rx=`));
+  }
+  const bar = render(SIMPLE).match(/<rect x="0" y="([\d.]+)" width="\d+" height="4" fill="#[0-9a-f]+"\/>/);
+  assert.ok(Number.isInteger(Number(bar[1])), `bar y ${bar[1]}`);
+});
