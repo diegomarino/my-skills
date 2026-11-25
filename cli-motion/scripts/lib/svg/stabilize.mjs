@@ -106,3 +106,36 @@ export function stabilizeSvgAnimation(svg, { once = false, fades = [], duration:
 
   return svg.replace(keyframes.css, rules.join('')).replace(reel[0], `<g>${overlays.join('')}</g>`);
 }
+
+/**
+ * The stationary states of an svg-term animation, for raster export.
+ * Returns { total, states: [{ start, end, markup }] (seconds; markup is the frame without
+ * its reel offset), compose(markup) } where compose puts markup in the svg as the only frame.
+ */
+export function reelStates(svg) {
+  const duration = svg.match(/animation-duration:([\d.]+)s/)?.[1];
+  const keyframes = keyframeBlock(svg);
+  const reel = svg.match(
+    /<g style="animation-duration:[^"]+"><svg width="\d+">((?:<svg(?: x="\d+")?>[\s\S]*?<\/svg>)+)<\/svg><\/g>/,
+  );
+  if (!duration || !reel) throw new Error('unsupported svg-term animated reel');
+  const total = Number(duration);
+  const steps = [
+    ...keyframes.css.matchAll(/([\d.]+%|to)\{transform:translateX\((-?\d+)px\)\}/g),
+  ].map(([, at, offset]) => ({ at: at === 'to' ? 100 : Number.parseFloat(at), x: Math.abs(Number(offset)) }));
+  if (steps.length < 2) throw new Error('svg-term animation has too few frames');
+  const frames = [...reel[1].matchAll(/<svg(?: x="(\d+)")?>[\s\S]*?<\/svg>/g)];
+  const frameAt = new Map(frames.map((m) => [Number(m[1] ?? 0), m[0]]));
+  const states = [];
+  for (let i = 0; i < steps.length - 1; i++) {
+    const markup = frameAt.get(steps[i].x);
+    if (!markup) throw new Error(`svg-term frame at x=${steps[i].x} not found`);
+    states.push({
+      start: (steps[i].at / 100) * total,
+      end: (steps[i + 1].at / 100) * total,
+      markup: markup.replace(/^<svg(?: x="\d+")?>/, '<svg>'),
+    });
+  }
+  const stripped = svg.replace(keyframes.css, '');
+  return { total, states, compose: (markup) => stripped.replace(reel[0], () => `<g>${markup}</g>`) };
+}

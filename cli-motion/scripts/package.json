@@ -17,6 +17,7 @@
     "@resvg/resvg-js": "2.6.2",
     "cfonts": "3.3.1",
     "figlet": "1.8.0",
+    "gifenc": "1.0.3",
     "subset-font": "2.9.0",
     "yaml": "2.8.1"
   }

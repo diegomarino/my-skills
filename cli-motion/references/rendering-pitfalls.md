@@ -6,6 +6,18 @@ svg-term lays all terminal frames side by side on a wide reel and animates the r
 
 cli-motion keeps svg-term's vector frames but rewrites how a frame is chosen: every frame sits at the same origin, is `visibility:hidden` by default, and a discrete `step-end` animation makes it visible for exactly its interval. No `translateX` remains and nothing is composited as a moving layer. (`visibility`, not `opacity`: hidden frames are not painted.) The rewrite is `scripts/lib/svg/stabilize.mjs`, ported from gh-delta, and the tests assert no `translateX` is left. For raster exports the same principle applies: integer pixel positions, one rasteriser, no error-diffusion dithering.
 
+## Raster anti-shimmer (GIF and MP4)
+
+GIF and MP4 shimmer for different reasons than the SVG: a changing palette or error-diffusion dithering gives the same text different pixels from frame to frame. The export follows these rules, and the tests check them:
+
+- **One rasteriser:** every frame goes through `@resvg/resvg-js`, never a mix of browsers or renderers.
+- **Integer scale and integer positions:** `--scale` is 1, 2 or 3; the window, terminal and progress bar sit on whole pixels (the bar's width is rounded to a whole pixel), so a frame that did not change renders to the very same pixels.
+- **Identical frames are merged**, not re-encoded, so a held frame cannot drift between encodes.
+- **One global palette for the whole GIF** (`palettegen stats_mode=full`, or one shared palette in the pure-JS encoder), never a palette per frame: the same colour keeps the same index in every frame.
+- **No error-diffusion dithering** (`dither=none`, optionally `bayer`, which is a fixed pattern). Floyd–Steinberg and `sierra2_4a` spread rounding errors to neighbouring pixels, so a changed pixel on one line changes the dots on the next; `gif_dither` rejects them.
+- **Frame times are written exactly:** GIF delays are centiseconds and ffmpeg's GIF muxer snaps to its own time base, so cli-motion writes the delays itself and never emits a frame under 20 ms.
+- **MP4:** yuv420p halves colour resolution, which softens coloured text edges slightly; the export tags BT.709 so players do not shift colours, and uses `-tune animation` with a low CRF.
+
 ## Final hold
 
 svg-term takes the loop duration from the **last event**. A trailing `wait` emits nothing, so the hold would be dropped and the loop would restart the instant the last line appears. The engine therefore appends a no-op event (`\x1b[0m`) after `final_hold`. If you hand-write casts, do the same.

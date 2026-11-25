@@ -1,7 +1,7 @@
 ---
 name: cli-motion
-description: Turns a declarative YAML scene (typed commands, output with highlights, spinners, real captured commands, banners, scene transitions) into a crisp animated SVG terminal recording or a still, themed with any of 25 palettes. Use when asked to make a terminal demo, CLI animation, README hero, or screencast-style SVG for a command-line tool, without recording a real terminal. Output is deterministic, so regenerating gives byte-identical files.
-compatibility: Node 20+. Network on first run (npm ci into the user cache, svg-term via npx). ffmpeg optional (MP4 export, later release). Nerd Font (powerline prompt) downloaded once on demand. Writes nothing inside the skill folder.
+description: Turns a declarative YAML scene (typed commands, output with highlights, spinners, real captured commands, banners, scene transitions) into a crisp animated SVG terminal recording, GIF, MP4 or a still, themed with any of 25 palettes. Use when asked to make a terminal demo, CLI animation, README hero, or screencast-style SVG for a command-line tool, without recording a real terminal. Output is deterministic, so regenerating gives byte-identical files.
+compatibility: Node 20+. Network on first run (npm ci into the user cache, svg-term via npx). ffmpeg optional (MP4 export; GIF has a pure-JS fallback). Nerd Font (powerline prompt) downloaded once on demand. Writes nothing inside the skill folder.
 ---
 
 # cli-motion
@@ -38,7 +38,7 @@ steps:
 | `doctor [--install]` | Node version, ffmpeg, dependency cache |
 | `fonts [--json]` | the five fonts, their packages, Nerd Font cache state |
 | `preview [--fonts] [--sizes] [--themes] [--out sheet.png\|html]` | contact sheet of font × size × theme, each cell labelled |
-| `export` | arrives in a later release |
+| `export <scene> [--gif] [--mp4] [--scale 1\|2\|3] [--fps N] [--out dir]` | GIF and MP4 (default both, 2×, 30 fps); see [export](references/export.md) |
 
 ## Writing a scene
 
@@ -56,7 +56,8 @@ Habits that work: keep clips under 20 s; one idea per scene; end on a waiting `p
 - [themes](references/themes.md), [prompts](references/prompts.md), [text-styles](references/text-styles.md), [cursor](references/cursor.md)
 - [spinners](references/spinners.md), [timing](references/timing.md), [transitions](references/transitions.md), [progress-bar](references/progress-bar.md)
 - [window](references/window.md), [fonts](references/fonts.md), [banners](references/banners.md), [banner-effects](references/banner-effects.md), [preview](references/preview.md)
-- [rendering-pitfalls](references/rendering-pitfalls.md): anti-shimmer, final hold, `--at`
+- [export](references/export.md): GIF/MP4 formats, scales, fps, size budget
+- [rendering-pitfalls](references/rendering-pitfalls.md): anti-shimmer (SVG and raster), final hold, `--at`
 
 Examples: `examples/quick-demo.scene.yaml` and `examples/multi-scene.scene.yaml` with their rendered `.svg` files.
 
