@@ -22,6 +22,8 @@ A `title:` is a scene's first thing on screen. Keys: `banner` (text), `font`, `s
 
 A gradient is two or more colours: `#rrggbb`, a theme colour (`accent`, `accent2`, `success`, `warning`, `error`, `info`) or an ANSI name. Colours are true-colour per glyph, so the SVG keeps them.
 
+Banners can animate (type, wipe, rainbow, decrypt, glitch …): see [banner-effects](banner-effects.md). Step form: `- banner: { text: "done" }`; keys `effect`, `duration`, `fps`, `direction`, `cycles`, `block` (multi-line block instead of text).
+
 A banner wider than the terminal fails with advice (shorter text, a smaller font such as `small`/`mini`/`tiny`, or a wider `width`). List figlet fonts: `node -e "console.log(require('figlet').fontsSync().join(' '))"` run inside the dependency cache.
 
 ## When to use

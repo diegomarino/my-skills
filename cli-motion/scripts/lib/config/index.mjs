@@ -16,7 +16,8 @@ export const SCENE_SCOPED = new Set([
   'prompt_time', 'prompt_status', 'cursor', 'cursor_blink', 'typed_style', 'output_style',
   'comment_style', 'styles', 'speed', 'typing_delay', 'typing_jitter', 'enter_delay',
   'prompt_delay', 'line_delay', 'scene_hold', 'spinner', 'spinner_style', 'banner_font',
-  'banner_style', 'banner_gradient', 'transition', 'transition_duration',
+  'banner_style', 'banner_gradient', 'banner_effect', 'banner_effect_duration', 'banner_effect_fps',
+  'banner_effect_direction', 'banner_effect_cycles', 'transition', 'transition_duration',
 ]);
 
 const ENUMS = {
