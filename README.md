@@ -54,3 +54,9 @@ cd cli-motion && node --test tests/*.test.mjs                  # cli-motion (Nod
 ```
 
 `setup-github-runner` also includes [behavioral scenarios](setup-github-runner/tests/scenarios.md), helper fixtures and workflow syntax checks described in its README.
+
+## License
+
+MIT, see [LICENSE](LICENSE).
+
+Third-party content: the 25 color themes bundled in `cli-motion/assets/themes/*.json` come from upstream palettes, each file keeping its own license and sources. Licenses found: MIT (Catppuccin, Dracula, Everforest, Gruvbox, Kanagawa, Nord, One Dark/Light, Rosé Pine, Solarized) and Apache-2.0 (Tokyo Night, from folke/tokyonight.nvim). Both allow redistribution inside an MIT repository as long as the attribution stays in the files, which it does. Fonts are not bundled: cli-motion downloads them from [@fontsource](https://fontsource.org/) at runtime (SIL OFL). svg-term and the other dependencies are npm packages, not vendored. `tui-design/` is generated from [`diegomarino/tui-design`](https://github.com/diegomarino/tui-design) and carries its own terms.

@@ -104,4 +104,4 @@ With the same scene, resolved settings and renderer, the cast and SVG are reprod
 
 ## License
 
-Each bundled theme (MIT/Apache-2.0 palettes from [tui-design](../tui-design/)) keeps its own license and sources in its file. A license for cli-motion itself is currently unspecified. Options implemented in later releases (dark/light pairs) are already accepted in `assets/defaults.yaml` and marked there.
+Each bundled theme (MIT/Apache-2.0 palettes from [tui-design](../tui-design/)) keeps its own license and sources in its file. cli-motion itself is MIT-licensed (see the repository [LICENSE](../LICENSE)); the theme licenses found are MIT and Apache-2.0 (Tokyo Night), both compatible with redistribution under MIT. Options implemented in later releases (dark/light pairs) are already accepted in `assets/defaults.yaml` and marked there.

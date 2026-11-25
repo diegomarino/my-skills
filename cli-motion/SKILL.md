@@ -1,6 +1,7 @@
 ---
 name: cli-motion
 description: Use when the user asks for a terminal demo, a CLI animation or README hero for a command-line tool, a still of a staged terminal frame, an animated banner, or a GIF or MP4 of a terminal scene, without recording a real terminal. Builds an animated SVG, still, GIF or MP4 from a YAML scene (typed commands, highlighted output, spinners, banners with effects, scene transitions, optionally the finished output of a command the user approves), with 25 themes and 5 fonts. Not for interactive sessions you cannot script.
+license: MIT
 compatibility: Node 20+ with npm/npx. Network on first run only (npm ci into the user cache, including the pinned svg-term). ffmpeg with libx264 optional (MP4; GIF has a pure-JS fallback). Nerd Font (powerline prompt) downloaded once on demand. Writes nothing inside the skill folder.
 ---
 
