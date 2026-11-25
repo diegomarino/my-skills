@@ -22,3 +22,4 @@ svg-term takes the loop duration from the **last event**. A trailing `wait` emit
 - **Colours not themed:** a program printing 256-colour or truecolor codes keeps those exact colours; only the 16 ANSI slots follow the theme.
 - **Banners:** a figlet banner wider than `width` fails; pick a narrower font (`small`, `mini`) or widen the terminal.
 - **First run** installs dependencies into the cache directory and fetches svg-term via npx; offline, only an already-cached run works (`cli-motion doctor`).
+- **Banner effects:** colour effects repaint every cell per frame; each frame is a full SVG screen. Frames = fps × duration; keep `fps` low. See [banner-effects](banner-effects.md).

@@ -1,0 +1,31 @@
+# Banner effects: every effect once, each in its own scene. See references/banner-effects.md.
+name: cli-motion · banner effects
+style:
+  theme: tokyonight-night
+  width: 56
+  banner_font: small
+  prompt: simple
+  final_hold: 2s
+  scene_hold: 0.6s
+  transition: clear
+scenes:
+  - title: { banner: "type", effect: type }
+    steps: [{ comment: "# effect: type (letter by letter)" }]
+  - title: { banner: "wipe", effect: wipe }
+    steps: [{ comment: "# effect: wipe (left to right)" }]
+  - title: { banner: "lines", effect: lines }
+    steps: [{ comment: "# effect: lines" }]
+  - title: { banner: "slide", effect: slide, direction: right }
+    steps: [{ comment: "# effect: slide (from the right)" }]
+  - title: { banner: "rainbow", effect: rainbow }
+    steps: [{ comment: "# effect: rainbow (12 fps)" }]
+  - title: { banner: "sweep", effect: gradient-sweep, gradient: [accent, accent2, success] }
+    steps: [{ comment: "# effect: gradient-sweep (theme colours)" }]
+  - title: { banner: "pulse", effect: pulse }
+    steps: [{ comment: "# effect: pulse" }]
+  - title: { banner: "decrypt", effect: decrypt }
+    steps: [{ comment: "# effect: decrypt (seeded)" }]
+  - title: { banner: "glitch", effect: glitch }
+    steps:
+      - comment: "# effect: glitch, and a banner as a step"
+      - banner: { block: "  ◢■■■◣\n  ■ ok ■\n  ◥■■■◤", effect: wipe, align: left, duration: 0.5s }

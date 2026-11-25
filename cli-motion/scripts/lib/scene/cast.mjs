@@ -71,13 +71,13 @@ export class Cast {
     }
   }
 
-  /** Advance the clock by dt, then write data. The cursor (if any) follows the text. */
-  out(data, dt = 0) {
+  /** Advance the clock by dt, then write data (`track: false` for in-place redraws that do not move the row count). The cursor (if any) follows the text. */
+  out(data, dt = 0, { track = true } = {}) {
     this.t += dt;
     let s = '';
     if (this.cursorShown) s += `${RESET} \b`;
     s += data;
-    this.#track(data);
+    if (track) this.#track(data);
     this.cursorShown = false;
     if (this.cursorActive && this.cursorEnabled) {
       s += this.#drawSeq();

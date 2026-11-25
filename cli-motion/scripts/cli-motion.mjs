@@ -87,6 +87,13 @@ async function cmdRender(args, still) {
     console.error(`cli-motion: wrote ${castPath}`);
   }
   const kb = (Buffer.byteLength(svg) / 1024).toFixed(1);
+  for (const e of build.bannerEffects ?? []) {
+    console.error(`cli-motion: banner effect ${e.effect}: ${e.frames} frames (${e.fps} fps × ${e.duration}s) at ${e.where.replace(/^.*?: /, '')}`);
+  }
+  if (build.bannerEffects?.length) {
+    const frames = build.bannerEffects.reduce((n, e) => n + e.frames, 0);
+    console.error(`cli-motion: banner effects added ${frames} frames; SVG is ${kb} KB. Lower fps or duration (or use a reveal effect) to shrink it.`);
+  }
   console.log(`${out} (${kb} KB, ${build.duration.toFixed(1)}s, ${build.header.width}x${build.header.height} cells, ${build.style.theme})`);
 }
 
