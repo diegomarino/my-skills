@@ -88,7 +88,8 @@ progress_track: null           # null = derived from the theme background
 progress_height: 4             # px
 
 # ── raster export ───────────────────────────────────────────────────────────
-scale: 2                       # implemented in a later task: GIF/MP4 pixel scale (1, 2, 3)
-mp4_fps: 30                    # implemented in a later task
-gif_fps: 15                    # implemented in a later task
-gif_dither: false              # implemented in a later task: single global palette, no error diffusion
+scale: 2                       # GIF/MP4 pixel scale: 1, 2 or 3 (integers only: text stays pixel-aligned); `export --scale`
+mp4_fps: 30                    # MP4 frame rate; the progress bar and fades are sampled at it; `export --fps`
+gif_fps: 15                    # frames per second of a fade in a GIF (a fade of 0.4s = 6 blended frames)
+gif_progress_step: 0.5s        # GIF progress bar moves in steps this long (smaller = smoother bar, bigger file; progress_bar: false = smallest)
+gif_dither: false              # false = none | bayer (ordered). Error-diffusion is refused: it shimmers. One global palette either way.

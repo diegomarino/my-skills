@@ -33,3 +33,13 @@ export function progressMarkup({ x, y, width, windowHeight, duration, height, fi
     `</rect>`
   );
 }
+
+/** Static bar at `fraction` (0..1), for raster frames. Whole logical pixels, so positions stay integer at any integer scale. */
+export function progressStaticMarkup({ x, y, width, windowHeight, fraction, height, fill, track }) {
+  const top = y + windowHeight - height;
+  const filled = Math.max(0, Math.min(width, Math.round(width * fraction)));
+  return (
+    `<rect x="${x}" y="${top}" width="${width}" height="${height}" fill="${track}"/>` +
+    (filled > 0 ? `<rect x="${x}" y="${top}" width="${filled}" height="${height}" fill="${fill}"/>` : '')
+  );
+}

@@ -31,7 +31,7 @@ export function xresources(theme) {
   return `${lines.join('\n')}\n`;
 }
 
-function runSvgTerm({ castText, theme, style, at }) {
+export function runSvgTerm({ castText, theme, style, at }) {
   const dir = mkdtempSync(join(tmpdir(), 'cli-motion-'));
   try {
     const cast = join(dir, 'in.cast');
@@ -59,8 +59,12 @@ function runSvgTerm({ castText, theme, style, at }) {
   }
 }
 
-/** Frame + fonts around a bare svg-term SVG. Returns { svg, faces, family, missing }. */
-async function finish(bare, build, { progress }) {
+/**
+ * Fonts and window geometry for a bare svg-term SVG. Returns { faces, family, missing, wrap }
+ * where wrap(bareSvg, progress) frames one SVG (animated or a single still frame) with the
+ * embedded font, so raster export can frame many stills with one font subset.
+ */
+export async function prepareFraming(bare, build) {
   const { style, theme } = build;
   const info = fontInfo(style.font);
   const fontSize = Number(style.font_size);
@@ -74,13 +78,21 @@ async function finish(bare, build, { progress }) {
   for (const ch of String(title)) codepoints.add(ch.codePointAt(0));
   const nerd = style.font_nerd === true || (style.font_nerd === 'auto' && needsNerd(codepoints));
   const subset = await subsetFaces({ font: style.font, codepoints, nerd, log: (m) => console.error(`cli-motion: ${m}`) });
-
-  const { svg: framed } = applyFrame(bare, {
-    style, theme, title, fontSize, advance: info.advance, fontFamily: provisional(subset.family), progress,
-  });
   const css = fontFaceCss(subset.faces);
-  const svg = framed.replace(/^<svg[^>]*>/, (open) => `${open}<style>${css}</style>`);
-  return { svg, faces: subset.faces, family: subset.family, missing: subset.missing };
+
+  const wrap = (svgIn, progress = null, frameStyle = style) => {
+    const { svg: framed, geometry } = applyFrame(svgIn, {
+      style: frameStyle, theme, title, fontSize, advance: info.advance, fontFamily: provisional(subset.family), progress,
+    });
+    return { svg: framed.replace(/^<svg[^>]*>/, (open) => `${open}<style>${css}</style>`), geometry };
+  };
+  return { faces: subset.faces, family: subset.family, missing: subset.missing, wrap };
+}
+
+/** Frame + fonts around a bare svg-term SVG. Returns { svg, faces, family, missing }. */
+async function finish(bare, build, { progress }) {
+  const prepared = await prepareFraming(bare, build);
+  return { svg: prepared.wrap(bare, progress).svg, faces: prepared.faces, family: prepared.family, missing: prepared.missing };
 }
 
 function warnMissing(missing, font) {

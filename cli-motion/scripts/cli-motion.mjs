@@ -7,9 +7,10 @@
 //   cli-motion doctor [--install]
 
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, statSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
 import { cacheState, ensureDeps } from './lib/deps.mjs';
+import { ffmpegInfo } from './lib/raster/ffmpeg.mjs';
 
 const USAGE = `cli-motion: terminal animations from a YAML scene
 
@@ -21,12 +22,17 @@ Usage
   cli-motion fonts [--json]                                     list fonts, sizes, Nerd Font cache
   cli-motion preview [--fonts a,b|all] [--sizes 12,14] [--themes a,b|all] [--out sheet.png|sheet.html]
                                                                 contact sheet: font × size × theme
-  cli-motion export                                             arrives in a later release
+  cli-motion export <scene.yaml> [--gif] [--mp4] [--scale 1|2|3] [--fps N] [--out dir]
+                                                                GIF and/or MP4 (default: both; 2x, MP4 30 fps)
 
 Options
   -o, --out <file>   output path (default: next to the scene)
   --cast [file]      also write the asciicast v2 (default: next to the output)
   --at <ms|end>      still: millisecond of the frame, or "end" (default)
+  --gif / --mp4      export: formats to write (neither given = both; MP4 is skipped without ffmpeg)
+  --scale <1|2|3>    export: pixel scale (default 2)
+  --fps <n>          export: MP4 frame rate (default 30)
+  --encoder <e>      export: GIF encoder auto | ffmpeg | js (default auto: ffmpeg when found)
   -h, --help
 `;
 
@@ -48,6 +54,11 @@ function parseArgs(argv) {
     else if (a === '--fonts') args.flags.fonts = next();
     else if (a === '--sizes') args.flags.sizes = next();
     else if (a === '--themes') args.flags.themes = next();
+    else if (a === '--gif') args.flags.gif = true;
+    else if (a === '--mp4') args.flags.mp4 = true;
+    else if (a === '--scale') args.flags.scale = next();
+    else if (a === '--fps') args.flags.fps = next();
+    else if (a === '--encoder') args.flags.encoder = next();
     else if (a === '--json') args.flags.json = true;
     else if (a === '--install') args.flags.install = true;
     else if (a === '-h' || a === '--help') args.flags.help = true;
@@ -88,6 +99,31 @@ async function cmdRender(args, still) {
   }
   const kb = (Buffer.byteLength(svg) / 1024).toFixed(1);
   console.log(`${out} (${kb} KB, ${build.duration.toFixed(1)}s, ${build.header.width}x${build.header.height} cells, ${build.style.theme})`);
+}
+
+async function cmdExport(args) {
+  const [sceneFile] = args._;
+  if (!sceneFile) throw new UsageError(`export needs a scene file\n\n${USAGE}`);
+  const build = await loadBuild(sceneFile);
+  const { exportScene } = await import('./lib/raster/index.mjs');
+  const { ffmpegInfo } = await import('./lib/raster/ffmpeg.mjs');
+  const explicit = args.flags.gif || args.flags.mp4;
+  let gif = explicit ? !!args.flags.gif : true;
+  let mp4 = explicit ? !!args.flags.mp4 : true;
+  if (!explicit && !ffmpegInfo().ffmpeg) {
+    mp4 = false;
+    console.error('cli-motion: ffmpeg not found: skipping MP4 (writing the GIF with the pure-JS encoder)');
+  }
+  const outDir = resolve(args.flags.out ?? dirname(build.file));
+  const results = await exportScene(build, {
+    gif, mp4, outDir, base: sceneBase(sceneFile), encoder: args.flags.encoder ?? 'auto',
+    flags: { scale: args.flags.scale, fps: args.flags.fps },
+    log: (m) => console.error(`cli-motion: ${m}`),
+  });
+  for (const r of results) {
+    const kb = (statSync(r.file).size / 1024).toFixed(0);
+    console.log(`${r.file} (${r.format}${r.encoder ? `, ${r.encoder}` : ''}, ${kb} KB, ${r.seconds.toFixed(2)}s, ${r.frames} frames, ${r.unique} distinct)`);
+  }
 }
 
 async function cmdThemes(args) {
@@ -146,10 +182,16 @@ function cmdDoctor(args) {
 
   major >= 20 ? ok('node', `v${process.versions.node}`) : bad('node', `v${process.versions.node}: Node 20+ is required`);
 
-  const ff = spawnSync('ffmpeg', ['-version'], { encoding: 'utf8' });
-  ff.status === 0
-    ? ok('ffmpeg', ff.stdout.split('\n')[0])
+  const ff = ffmpegInfo();
+  ff.ffmpeg
+    ? ok('ffmpeg', ff.ffmpeg)
     : warn('ffmpeg', 'not found: optional, only needed for MP4 export (GIF has a pure-JS fallback)');
+  const formats = [
+    'svg (animated), svg still, png preview: always',
+    ff.ffmpeg && ff.libx264 ? 'mp4: yes (ffmpeg + libx264)' : ff.ffmpeg ? 'mp4: no (this ffmpeg lacks libx264)' : 'mp4: no (needs ffmpeg)',
+    ff.ffmpeg ? 'gif: yes (ffmpeg, one global palette; --encoder js for pure JS)' : 'gif: yes (pure-JS gifenc, one global palette)',
+  ];
+  ok('export', formats.join('; '));
 
   const npx = spawnSync(process.platform === 'win32' ? 'npx.cmd' : 'npx', ['--version'], { encoding: 'utf8' });
   npx.status === 0 ? ok('npx', `v${npx.stdout.trim()} (runs the pinned svg-term-cli@2.1.1)`) : bad('npx', 'not found: install Node with npm');
@@ -188,8 +230,7 @@ async function main() {
     case 'doctor': return cmdDoctor(args);
     case 'fonts': return cmdFonts(args);
     case 'preview': return cmdPreview(args);
-    case 'export':
-      throw new UsageError('`export` is implemented in a later release of cli-motion');
+    case 'export': return cmdExport(args);
     default:
       throw new UsageError(`unknown command "${command}"\n\n${USAGE}`);
   }
