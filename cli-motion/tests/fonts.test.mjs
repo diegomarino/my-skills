@@ -85,3 +85,33 @@ test('powerline refuses font_nerd: false', () => {
 test('checksum helper matches pinned format', () => {
   assert.equal(createHash('sha256').update('x').digest('hex').length, 64);
 });
+
+test('two fonts really differ: embedded family, and the rasterised glyph pixels', async () => {
+  const { buildCells, rasteriseSvg } = await import('../scripts/lib/preview/index.mjs');
+  const [a, b, c] = await buildCells({ fonts: ['JetBrains Mono', 'Fira Code', 'Cascadia Code'], sizes: [16], themes: ['nord-dark'] });
+  const family = (cell) => [...new Set([...cell.svg.matchAll(/@font-face\{font-family:'([^']+)'/g)].map((m) => m[1]))];
+  assert.deepEqual(family(a), ['JetBrains Mono']);
+  assert.deepEqual(family(b), ['Fira Code']);
+  assert.deepEqual(family(c), ['Cascadia Code']);
+  assert.match(b.svg, /font-family="'Fira Code',/);
+  // the subset TTFs carry real family names (resvg picks fonts by name)
+  assert.ok(b.faces.some((f) => f.sfnt.toString('utf16le').includes('Fira') || f.sfnt.includes(Buffer.from('Fira Code', 'utf16le').swap16())));
+  const pa = rasteriseSvg(a.svg, a.faces, 1);
+  const pb = rasteriseSvg(b.svg, b.faces, 1);
+  const pc = rasteriseSvg(c.svg, c.faces, 1);
+  assert.notDeepEqual(pa, pb, 'JetBrains Mono and Fira Code cells must not be pixel-identical');
+  assert.notDeepEqual(pa, pc);
+  assert.notDeepEqual(pb, pc);
+});
+
+test('glyph pixels for one line differ between fonts (not a shared system fallback)', async () => {
+  const { rasteriseSvg } = await import('../scripts/lib/preview/index.mjs');
+  const cps = new Set([...'Il1O0agQ@'].map((ch) => ch.codePointAt(0)));
+  const pngs = [];
+  for (const font of ['JetBrains Mono', 'Fira Code', 'IBM Plex Mono']) {
+    const sub = await fonts.subsetFaces({ font, codepoints: cps });
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="60"><rect width="300" height="60" fill="#fff"/><text x="5" y="40" font-family="'${font}',monospace" font-size="30">Il1O0agQ@</text></svg>`;
+    pngs.push(Buffer.from(rasteriseSvg(svg, sub.faces, 1)).toString('base64'));
+  }
+  assert.equal(new Set(pngs).size, 3);
+});

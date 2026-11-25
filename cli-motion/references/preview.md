@@ -19,7 +19,7 @@ The mini scene is picked to make fonts differ: ligatures (`=> != -> <= ===`), co
 
 Every cell is a real render through the same pipeline as `render` (window frame, embedded font subset), with a label beneath: `#07`, `font: …`, `font_size: …`, `theme: …`. Those three lines paste straight into `style:`.
 
-- **PNG** (resvg does not apply ligatures, so `=>` stays two glyphs; use HTML to see them) is drawn by `@resvg/resvg-js` at 2×; one image, easy to send in a chat or issue.
+- **PNG** is drawn by `@resvg/resvg-js` at 2× (the font subsets are passed to it as TTF files: resvg ignores `@font-face`); one image, easy to send in a chat or issue.
 - **HTML** inlines each cell as an `<img>` of its SVG (so it also checks `<img>` rendering) in a responsive grid; opens in any browser, light or dark.
 
 The sheet is deterministic: same flags, same bytes. Many cells take time (about 1 s each); keep `--themes all --fonts all` for HTML you open once.

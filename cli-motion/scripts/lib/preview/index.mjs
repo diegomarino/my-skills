@@ -5,6 +5,9 @@
 // three lines under it into `style:`. PNG goes through @resvg/resvg-js, which needs the font
 // as TTF bytes (it ignores @font-face), so the cells' subset faces are handed to it.
 
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { dep } from '../deps.mjs';
 import { loadDefaults, loadTheme } from '../config/index.mjs';
 import { FONT_NAMES, subsetFaces } from '../fonts/index.mjs';
@@ -94,21 +97,37 @@ ${items}
 `;
 }
 
+/**
+ * SVG → PNG with resvg. resvg ignores @font-face, so the subset faces are written to a temp
+ * dir as TTF and passed as `fontFiles` (the `fontBuffers` option is ignored by this version
+ * and silently falls back to a system sans: every font then looks the same).
+ */
+export function rasteriseSvg(svg, faces, zoom = 2) {
+  const { Resvg } = dep('@resvg/resvg-js');
+  const dir = mkdtempSync(join(tmpdir(), 'cli-motion-fonts-'));
+  try {
+    const fontFiles = faces.map((f, i) => {
+      const file = join(dir, `${i}-${f.family.replace(/\W+/g, '')}-${f.weight}.ttf`);
+      writeFileSync(file, f.sfnt);
+      return file;
+    });
+    const r = new Resvg(svg, {
+      font: { loadSystemFonts: false, fontFiles, defaultFontFamily: faces[0]?.family ?? 'JetBrains Mono' },
+      fitTo: { mode: 'zoom', value: zoom },
+    });
+    return r.render().asPng();
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
 /** Sheet as one SVG whose cells are pre-rendered PNGs (resvg), plus the label font. */
 export async function sheetPng(cells, { cols = 3 } = {}) {
-  const { Resvg } = dep('@resvg/resvg-js');
   const gap = 28;
   const labelH = 50;
   const margin = 32;
   const SCALE = 2;
-  const rasterise = (svg, faces, extra = {}) => {
-    const buffers = [...faces.map((f) => f.sfnt), ...(extra.buffers ?? [])];
-    const r = new Resvg(svg, {
-      font: { loadSystemFonts: false, fontBuffers: buffers, defaultFontFamily: faces[0]?.family ?? 'JetBrains Mono' },
-      fitTo: { mode: 'zoom', value: extra.zoom ?? SCALE },
-    });
-    return r.render().asPng();
-  };
+  const rasterise = (svg, faces, extra = {}) => rasteriseSvg(svg, faces, extra.zoom ?? SCALE);
 
   const colW = [];
   const rows = Math.ceil(cells.length / cols);

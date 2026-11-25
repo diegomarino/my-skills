@@ -15,8 +15,9 @@ import { join } from 'node:path';
 import { dep, cacheDir, cacheRoot } from '../deps.mjs';
 import { ASSETS_DIR, ConfigError } from '../config/index.mjs';
 import { sfntCodepoints } from './cmap.mjs';
+import { withNames } from './sfnt.mjs';
 
-export const FONT_FALLBACK_STACK = "'DejaVu Sans Mono','Menlo','Consolas',monospace";
+export const FONT_FALLBACK_STACK = "'DejaVu Sans Mono','Cascadia Code','Menlo','Consolas',monospace";
 const registry = JSON.parse(readFileSync(join(ASSETS_DIR, 'fonts.json'), 'utf8'));
 
 export const FONT_NAMES = Object.keys(registry.fonts);
@@ -117,10 +118,11 @@ export async function subsetFaces({ font, codepoints, nerd = false, env = proces
   const nerdBufs = nerd ? await ensureNerdFont(font, { env, log }) : null;
   for (const weight of ['regular', 'bold']) {
     let remaining = new Set(codepoints);
+    const FALLBACK_FAMILY = { 'dejavu-mono': 'DejaVu Sans Mono', 'cascadia-code': 'Cascadia Code' };
     const sources = [
-      ...(nerd ? [{ id: `nerd-${weight}`, buf: nerdBufs[weight] }] : []),
-      ...fontsourceFiles(info.package, weight),
-      ...registry.fallback.flatMap((pkg) => fontsourceFiles(pkg, weight)),
+      ...(nerd ? [{ id: `nerd-${weight}`, buf: nerdBufs[weight], name: info.nerd.family }] : []),
+      ...fontsourceFiles(info.package, weight).map((x) => ({ ...x, name: font })),
+      ...registry.fallback.flatMap((pkg) => fontsourceFiles(pkg, weight).map((x) => ({ ...x, name: FALLBACK_FAMILY[pkg] }))),
     ];
     for (const src of sources) {
       if (remaining.size === 0) break;
@@ -131,7 +133,7 @@ export async function subsetFaces({ font, codepoints, nerd = false, env = proces
       const only = String.fromCodePoint(...present);
       const woff2 = await subsetFont(src.buf, only, { targetFormat: 'woff2' });
       faces.push({
-        weight: WEIGHTS[weight], family, woff2, sfnt: await subsetFont(src.buf, only, { targetFormat: 'sfnt' }), codepoints: present, source: src.id,
+        weight: WEIGHTS[weight], family, woff2, sfnt: withNames(await subsetFont(src.buf, only, { targetFormat: 'sfnt' }), src.name, weight === 'bold' ? 'Bold' : 'Regular'), codepoints: present, source: src.id,
       });
       for (const c of present) remaining.delete(c);
     }
