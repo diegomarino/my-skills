@@ -9,6 +9,7 @@ import {
 } from '../config/index.mjs';
 import { fontInfo } from '../fonts/index.mjs';
 import { Cast } from './cast.mjs';
+import { EFFECT_DEFAULTS, EFFECT_NAMES, SLIDE_DIRECTIONS, effectFrames, hashSeed, renderRow } from './effects.mjs';
 import { RESET, StyleError, renderMarkup, sgr } from './style.mjs';
 
 export class SceneError extends Error {
@@ -20,7 +21,8 @@ export class SceneError extends Error {
 
 const TOP_KEYS = ['name', 'style', 'scenes', 'steps'];
 const SCENE_KEYS = ['title', 'steps', 'transition', 'hold', 'style'];
-const TITLE_KEYS = ['banner', 'font', 'subtitle', 'align', 'style', 'engine', 'gradient'];
+const EFFECT_KEYS = ['effect', 'duration', 'fps', 'direction', 'cycles'];
+const TITLE_KEYS = ['banner', 'block', 'font', 'subtitle', 'align', 'style', 'engine', 'gradient', ...EFFECT_KEYS];
 export const CFONTS_FONTS = ['block', 'simple', 'simpleBlock', 'simple3d', '3d', 'chrome', 'huge', 'shade', 'slick', 'grid', 'pallet', 'tiny', 'console'];
 const COMMON = ['speed', 'hold'];
 const ACTIONS = {
@@ -33,6 +35,7 @@ const ACTIONS = {
   run: ['text', 'show', 'timeout', 'cwd', 'env', 'show_command', 'allow_failure', 'delay', 'instant'],
   clear: [],
   prompt: [],
+  banner: ['text', 'block', 'font', 'subtitle', 'align', 'style', 'engine', 'gradient', ...EFFECT_KEYS],
 };
 
 /** "1.5s" | "800ms" | 2 → seconds. */
@@ -118,6 +121,7 @@ class Director {
     this.file = file;
     this.style = style;
     this.speed = 1;
+    this.effects = [];
   }
 
   get s() {
@@ -245,14 +249,18 @@ class Director {
     const figlet = dep('figlet');
     const spec = typeof title === 'string' ? { banner: title } : title;
     checkKeysScene(spec, TITLE_KEYS, `${this.where} title`);
-    if (!spec.banner) throw new SceneError(`${this.where}: title needs a \`banner:\` text`);
+    if (!spec.banner && !spec.block) throw new SceneError(`${this.where}: a banner needs a \`banner:\` text (or a multi-line \`block:\`)`);
+    if (spec.banner && spec.block) throw new SceneError(`${this.where}: use \`banner:\` or \`block:\`, not both`);
     const gradient = spec.gradient ?? this.style.banner_gradient;
-    const engine = spec.engine ?? (gradient ? 'cfonts' : 'figlet');
+    const effect = this.effectSpec(spec);
+    // a gradient-sweep takes its colours from `gradient:` and keeps the figlet engine
+    const engine = spec.block ? 'figlet' : spec.engine ?? (gradient && effect?.name !== 'gradient-sweep' ? 'cfonts' : 'figlet');
     if (!['figlet', 'cfonts'].includes(engine)) {
       throw new SceneError(`${this.where}: unknown banner engine "${engine}". Valid engines: figlet, cfonts`);
     }
     let lines;
-    if (engine === 'cfonts') lines = this.cfontsLines(spec, gradient);
+    if (spec.block) lines = String(spec.block).replace(/\s+$/, '').split('\n').map((l) => l.replace(/\s+$/, ''));
+    else if (engine === 'cfonts') lines = this.cfontsLines(spec, gradient);
     else {
       const font = spec.font ?? this.style.banner_font;
       let art;
@@ -273,12 +281,107 @@ class Director {
     const styleSpec = this.style.styles[spec.style] ?? spec.style ?? this.style.styles[this.style.banner_style] ?? this.style.banner_style;
     const open = engine === 'cfonts' ? '' : this.sgr(styleSpec);
     this.cast.setCursorActive(false);
-    for (const line of lines) this.cast.out(`${pad(widest)}${open}${line}${RESET}\r\n`, this.d(this.style.line_delay * 1.6));
+    if (effect) {
+      const staticRows = lines.map((line) => `${pad(widest)}${open}${line}${RESET}`);
+      this.animateBanner({ spec, effect, lines, staticRows, widest, align, engine, styleSpec, gradient });
+    } else for (const line of lines) this.cast.out(`${pad(widest)}${open}${line}${RESET}\r\n`, this.d(this.style.line_delay * 1.6));
     if (spec.subtitle) {
       this.cast.out('\r\n', this.d(0.1));
       const sub = String(spec.subtitle);
       this.cast.out(`${pad(sub.length)}${this.markup(sub, this.style.comment_style)}\r\n`, this.d(0.3));
     }
+  }
+
+  /** Resolve and validate the effect options of a banner; null when it is static. */
+  effectSpec(spec) {
+    const name = spec.effect ?? this.style.banner_effect;
+    if (name == null || name === 'none' || name === false) return null;
+    if (!EFFECT_NAMES.includes(name)) {
+      throw new SceneError(`${this.where}: unknown banner effect "${name}". Valid effects: ${EFFECT_NAMES.join(', ')} (or none)`);
+    }
+    const def = EFFECT_DEFAULTS[name];
+    const duration = parseDuration(spec.duration ?? this.style.banner_effect_duration ?? def.duration, `${this.where} duration`);
+    const fps = Number(spec.fps ?? this.style.banner_effect_fps ?? def.fps);
+    if (!(duration > 0)) throw new SceneError(`${this.where}: effect duration must be above 0`);
+    if (!(fps >= 1 && fps <= 60)) throw new SceneError(`${this.where}: effect fps must be between 1 and 60, got ${JSON.stringify(spec.fps ?? this.style.banner_effect_fps)}`);
+    const direction = spec.direction ?? this.style.banner_effect_direction;
+    if (!SLIDE_DIRECTIONS.includes(direction)) {
+      throw new SceneError(`${this.where}: invalid direction "${direction}". Valid directions: ${SLIDE_DIRECTIONS.join(', ')}`);
+    }
+    const cycles = Number(spec.cycles ?? this.style.banner_effect_cycles);
+    if (!(cycles > 0)) throw new SceneError(`${this.where}: effect cycles must be above 0`);
+    return { name, duration, fps, direction, cycles };
+  }
+
+  /** Draw a banner as a seeded animation; the last frame is exactly the static banner. */
+  animateBanner({ spec, effect, lines, staticRows, widest, align, engine, styleSpec, gradient }) {
+    const { cast } = this;
+    const width = cast.width;
+    const left = align === 'center' ? Math.floor((width - widest) / 2) : 0;
+    // base colour and weight of figlet/block lines come from the banner style
+    let baseFg = null;
+    let baseAt = '';
+    if (engine !== 'cfonts' || spec.block) {
+      for (const token of String(styleSpec).split(/\s+/).filter(Boolean)) {
+        if (token.startsWith('fg:')) baseFg = this.hex(token.slice(3));
+        else baseAt = { bold: '1', dim: '2', italic: '3', underline: '4' }[token] ?? baseAt;
+      }
+    }
+    const rows = lines.map((line) => {
+      const cells = Array.from({ length: left }, () => ({ ch: ' ', fg: null, at: '' }));
+      let fg = baseFg;
+      let at = baseAt;
+      for (const part of line.split(/(\x1b\[[0-9;]*m)/)) {
+        const m = /^\x1b\[([0-9;]*)m$/.exec(part);
+        if (m) {
+          const p = m[1].split(';').map(Number);
+          for (let i = 0; i < p.length; i++) {
+            if (p[i] === 0 || m[1] === '') { fg = baseFg; at = baseAt; } else if (p[i] === 1) at = '1';
+            else if (p[i] === 38 && p[i + 1] === 2) {
+              fg = `#${[p[i + 2], p[i + 3], p[i + 4]].map((v) => v.toString(16).padStart(2, '0')).join('')}`;
+              i += 4;
+            }
+          }
+        } else for (const ch of part) cells.push({ ch, fg, at });
+      }
+      while (cells.length < width) cells.push({ ch: ' ', fg: null, at: '' });
+      return cells.slice(0, width);
+    });
+    const t = this.theme;
+    const safe = (name) => { try { return this.hex(name); } catch { return null; } };
+    const colours = Array.isArray(gradient) && gradient.length >= 2
+      ? gradient.map((c) => this.hex(String(c)))
+      : [safe('accent') ?? t.terminal.ansi[4], safe('accent2') ?? t.terminal.ansi[5]];
+    const palette = {
+      colours,
+      noise: t.terminal.ansi[8],
+      noiseColours: [safe('accent2'), safe('error'), safe('info'), t.terminal.ansi[1]].filter(Boolean),
+      foreground: t.terminal.foreground,
+      background: t.terminal.background,
+    };
+    const count = Math.max(2, Math.round(effect.fps * effect.duration));
+    const letters = spec.banner ? [...String(spec.banner)].filter((c) => c.trim()).length : 0;
+    const seed = hashSeed(`${this.style.seed}:${effect.name}:${spec.banner ?? spec.block}`);
+    const frames = effectFrames({
+      effect: effect.name, rows, width, left, bannerWidth: widest, count, letters: letters || 1, palette,
+      direction: effect.direction, cycles: effect.cycles, seed,
+    });
+    frames[frames.length - 1] = staticRows;
+    const gap = effect.duration / (count - 1);
+    // identical neighbours collapse into one longer frame (keeps the SVG small)
+    const emit = [];
+    for (const f of frames) {
+      const key = f.join('\n');
+      if (emit.length && emit.at(-1).key === key) emit.at(-1).hold++;
+      else emit.push({ key, rows: f, hold: 1 });
+    }
+    const n = lines.length;
+    emit.forEach((frame, i) => {
+      const body = frame.rows.map((r) => `\x1b[2K${r}\r\n`).join('');
+      if (i === 0) cast.out(body, 0);
+      else cast.out(`\x1b[${n}A\r${body}`, this.d(gap * emit[i - 1].hold), { track: false });
+    });
+    this.effects.push({ where: this.where, effect: effect.name, frames: emit.length, requested: count, fps: effect.fps, duration: effect.duration });
   }
 
   /** cfonts block letters with a colour gradient; returns lines that carry their own SGR. */
@@ -427,6 +530,11 @@ class Director {
       case 'prompt':
         this.showPrompt();
         break;
+      case 'banner': {
+        const { text: _t, ...rest } = opts;
+        this.banner({ ...(text != null ? { banner: String(text) } : {}), ...rest });
+        break;
+      }
       default:
     }
     if (opts.hold != null) this.cast.wait(this.d(parseDuration(opts.hold, `${where} hold`)));
@@ -514,6 +622,7 @@ export function buildCast(doc, { style, theme, baseDir = process.cwd(), file = '
     events: cast.events,
     duration: cast.duration,
     fades: cast.fades,
+    bannerEffects: director.effects,
     // 100 ms before the end, but never before the last real output event (short final holds)
     endMs: Math.max(
       Math.ceil((cast.events.at(-2)?.[0] ?? 0) * 1000),

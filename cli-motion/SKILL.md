@@ -42,7 +42,7 @@ steps:
 
 ## Writing a scene
 
-A scene file has `style:` (options) and `scenes:` (or a bare `steps:`). Steps: `command`, `type`, `output` (with `[accent]…[/]` highlights), `comment`, `pause`, `spinner`, `run` (executes a real command and keeps its ANSI colours), `clear`, `prompt`. Scenes can have a `title:` banner (figlet, or cfonts gradients) and a `transition` of `cut`, `clear` or `fade`.
+A scene file has `style:` (options) and `scenes:` (or a bare `steps:`). Steps: `command`, `type`, `output` (with `[accent]…[/]` highlights), `comment`, `pause`, `spinner`, `run` (executes a real command and keeps its ANSI colours), `clear`, `prompt`. Scenes can have a `title:` banner (figlet, or cfonts gradients; animated with `effect:` type, wipe, lines, slide, rainbow, gradient-sweep, pulse, decrypt, glitch: colour effects cost SVG size, see [banner-effects](references/banner-effects.md)) and a `transition` of `cut`, `clear` or `fade`.
 
 Every option has a default in `assets/defaults.yaml`; settings layer as defaults < project `cli-motion.yaml` < scene `style:` < per-scene/per-step options. Unknown keys fail with the valid ones listed, so fix the key rather than guessing.
 
@@ -55,7 +55,7 @@ Habits that work: keep clips under 20 s; one idea per scene; end on a waiting `p
 - [scene-format](references/scene-format.md): every step and option, with an example
 - [themes](references/themes.md), [prompts](references/prompts.md), [text-styles](references/text-styles.md), [cursor](references/cursor.md)
 - [spinners](references/spinners.md), [timing](references/timing.md), [transitions](references/transitions.md), [progress-bar](references/progress-bar.md)
-- [window](references/window.md), [fonts](references/fonts.md), [banners](references/banners.md), [preview](references/preview.md)
+- [window](references/window.md), [fonts](references/fonts.md), [banners](references/banners.md), [banner-effects](references/banner-effects.md), [preview](references/preview.md)
 - [export](references/export.md): GIF/MP4 formats, scales, fps, size budget
 - [rendering-pitfalls](references/rendering-pitfalls.md): anti-shimmer (SVG and raster), final hold, `--at`
 
