@@ -113,7 +113,7 @@ async function cmdFonts(args) {
   for (const f of fonts) {
     console.log(`${f.name.padEnd(width)}${f.name === 'JetBrains Mono' ? '  (default)' : '           '}  ${f.package}  nerd: ${f.nerd} [${f.nerdCached ? 'cached' : 'downloads on first use'}]`);
   }
-  console.log(`\nfont_size: any number of px (default 14). Nerd Fonts cache: ${nerdCacheDir()}`);
+  console.log(`\nfont_size: any number of px (default 16). Nerd Fonts cache: ${nerdCacheDir()}`);
 }
 
 async function cmdPreview(args) {

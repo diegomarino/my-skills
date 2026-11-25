@@ -14,7 +14,7 @@
 theme: catppuccin-mocha        # any id from `cli-motion themes` (25 tui-design themes)
 theme_light: null              # implemented in a later task: light twin for a <picture> dark/light pair
 font: JetBrains Mono           # JetBrains Mono | Fira Code | Cascadia Code | IBM Plex Mono | Source Code Pro (`cli-motion fonts`)
-font_size: 14                  # px
+font_size: 16                  # px
 font_nerd: auto                # auto (Nerd Font variant only when a glyph needs it, e.g. prompt: powerline) | true | false
 window: chrome                 # chrome (title bar + three dots) | plain (no title bar) | none (bare terminal)
 window_title: null             # text in the title bar; null = the scene's `name:`

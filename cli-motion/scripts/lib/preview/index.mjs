@@ -13,18 +13,21 @@ import { renderStillFramed } from '../svg/index.mjs';
 
 export const PREVIEW_DEFAULTS = {
   fonts: FONT_NAMES,
-  sizes: [14],
+  sizes: [16],
   themes: ['catppuccin-mocha', 'tokyonight-night', 'solarized-light'],
 };
 
+// Chosen so the fonts differ visibly: ligatures (=> != -> <= ===), confusable letters
+// (Il1 O0 rn m, agQ), bold and muted. No glyphs that every font borrows from DejaVu
+// (❯ ✓ ● → box drawing): they would look identical in every cell.
 const MINI_SCENE = `
-scenes:
-  - steps:
-      - command: "cli-motion render demo.yaml"
-      - output: |
-          [ok]✓[/] wrote [accent]demo.svg[/] [muted](0.8s)[/]
-          [warn]●[/] [strong]bold[/] regular [muted]muted[/]  → ─── ░▒▓
-      - spinner: { text: "rendering", for: 0.3s, done: "[ok]✔[/] done" }
+style: { prompt: dollar }
+steps:
+  - command: "git diff --stat  # Il1 O0o agQ"
+  - output: |
+      a => b   x != y   i -> j   n <= m   a === b
+      [strong]Il1O0 agQ rn m[/] regular [muted]{ } [ ] ( ) ~ @ & #[/]
+      [accent]const[/] total = items.map(x => x.n) // 9g 6b
 `;
 
 export function parseList(value, all, what) {
@@ -47,7 +50,7 @@ export async function buildCells({ fonts, sizes, themes }) {
           progress_bar: false, window_title: `${font} ${size}`,
         };
         const doc = parseSceneDocument(MINI_SCENE, 'preview scene');
-        const build = buildCast(doc, { style, theme, file: 'preview scene' });
+        const build = buildCast(doc, { style: { ...style, ...doc.style }, theme, file: 'preview scene' });
         const framed = await renderStillFramed({ ...build, name: undefined }, 'end');
         const svg = framed.svg;
         const w = Number(svg.match(/<svg[^>]*\swidth="([\d.]+)"/)[1]);

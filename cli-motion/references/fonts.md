@@ -1,6 +1,6 @@
 # Fonts
 
-**Default:** JetBrains Mono, 14 px.
+**Default:** JetBrains Mono, 16 px.
 
 ```yaml
 style:
