@@ -91,4 +91,4 @@ Examples with scene and rendered output: [examples/README.md](examples/README.md
 - Never write inside this skill folder; outputs go next to the scene or where `-o`/`--out` says.
 - Do not edit `assets/themes/*.json` by hand; regenerate with `scripts/sync-themes.mjs`.
 - Same scene, resolved settings and renderer give the same cast and SVG. A `run:` step changes the result when its command, files or environment change, and GIF/MP4 bytes can differ between encoder versions and machines ([timing](references/timing.md)). Keep typed text free of timestamps and machine paths unless pinned in the style (`prompt_time`, `prompt_cwd`).
-- Tests: from this folder, `env -u NO_COLOR node --test tests/*.test.mjs` (a bare `tests/` directory argument fails). The first run needs network once (npm ci into `~/.cache/cli-motion`, svg-term is part of the cache).
+- Tests: from this folder, `node --test tests/*.test.mjs` (a bare `tests/` directory argument fails). The first run needs network once (npm ci into `~/.cache/cli-motion`, svg-term is part of the cache).
