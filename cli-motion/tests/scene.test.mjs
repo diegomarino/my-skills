@@ -126,3 +126,18 @@ test('cursor modes draw and erase a cursor', () => {
   const hidden = build(SIMPLE);
   assert.ok(hidden.events.every(([, , d]) => !d.includes('\b')));
 });
+
+test('speed must be a positive number, globally and per scene', () => {
+  for (const bad of ['0', '-1', '"fast"']) {
+    assert.throws(() => build(`style: { speed: ${bad} }\nsteps: [{prompt: true}]\n`), /speed must be a positive number/);
+  }
+  assert.throws(() => build('scenes:\n  - style: { speed: 0 }\n    steps: [{prompt: true}]\n'), /speed must be a positive number/);
+});
+
+test('--at end never falls before the last output, even with a zero final hold', () => {
+  const b = build('style: { final_hold: 0 }\nsteps:\n  - command: ab\n');
+  const lastOutput = b.events.at(-2)[0] * 1000;
+  assert.ok(b.endMs >= lastOutput);
+  const long = build(SIMPLE);
+  assert.equal(long.endMs, Math.floor(long.duration * 1000) - 100);
+});

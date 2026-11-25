@@ -41,8 +41,11 @@ function parseArgs(argv) {
     if (a === '-o' || a === '--out') args.flags.out = next();
     else if (a === '--at') args.flags.at = next();
     else if (a === '--cast') {
-      args.flags.cast = argv[i + 1] && !argv[i + 1].startsWith('-') && /\.cast$/.test(argv[i + 1]) ? argv[++i] : true;
-    } else if (a === '--fonts') args.flags.fonts = next();
+      // a following path is the cast file, unless it is the scene (no scene yet, or a .yaml file)
+      const n = argv[i + 1];
+      args.flags.cast = n && !n.startsWith('-') && args._.length > 0 && !/\.ya?ml$/i.test(n) ? argv[++i] : true;
+    } else if (a.startsWith('--cast=')) args.flags.cast = a.slice(7);
+    else if (a === '--fonts') args.flags.fonts = next();
     else if (a === '--sizes') args.flags.sizes = next();
     else if (a === '--themes') args.flags.themes = next();
     else if (a === '--json') args.flags.json = true;
