@@ -2,6 +2,12 @@
 
 **Defaults:** typing 45 ms per character plus up to 30 ms of seeded jitter, 120 ms before Enter, 400 ms before a prompt, 50 ms between output lines, 1 s at the end of each scene, 3 s final hold, speed 1×, seed 42.
 
+**Alternatives:** speed 1× and the delays above are the defaults; `speed`, `typing_delay`, `seed`, per-step `speed`/`hold`.
+
+**Example:**
+
+![a short timed demo](../examples/quick-demo.svg)
+
 ```yaml
 style:
   speed: 1.2          # global: everything 20% faster

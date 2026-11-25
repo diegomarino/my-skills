@@ -2,6 +2,12 @@
 
 **Default:** `window: chrome`, a title bar with three dots, 8 px rounded corners, a soft shadow, no outer background.
 
+**Alternatives:** `chrome` is the default; `plain`, `none`, shadow off, an outer `window_background`.
+
+**Example:**
+
+![the chrome window](../examples/quick-demo.svg)
+
 ```yaml
 style:
   window: chrome            # chrome | plain | none

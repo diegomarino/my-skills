@@ -6,7 +6,13 @@ node scripts/cli-motion.mjs export demo.scene.yaml --gif --scale 1 # a small GIF
 node scripts/cli-motion.mjs export demo.scene.yaml --mp4 --fps 60 --out dist/
 ```
 
-**Defaults:** both formats, 2× scale, MP4 at 30 fps (H.264, yuv420p, `faststart`), one global GIF palette, no dithering. With neither `--gif` nor `--mp4`, both are written; without ffmpeg the MP4 is skipped with a note.
+**Default:** both formats, 2× scale, MP4 at 30 fps (H.264, yuv420p, `faststart`), one global GIF palette, no dithering. With neither `--gif` nor `--mp4`, both are written; without ffmpeg the MP4 is skipped with a note.
+
+**Alternatives:** `--gif` or `--mp4` only, `--scale 1|3`, `--fps N`, `--encoder js`.
+
+**Example:**
+
+![quick demo as a GIF](../examples/quick-demo.gif)
 
 | Option | Config key | Default | Alternatives |
 |---|---|---|---|
@@ -38,6 +44,10 @@ GIF size follows the number of distinct frames and their pixels:
 - **Typing speed:** every typed character is a frame; `typing_delay` above 0.06 s means fewer, longer frames.
 - Prefer MP4 where a video tag works (a README on GitHub can embed an MP4 via a user-attachments URL): it is usually 5–20× smaller than the GIF and plays smoothly.
 - A palette of ≤256 colours is used exactly; scenes with many anti-aliased colours are reduced to 256 with no dithering, so flat areas stay flat.
+
+## When to use
+
+GIF where only an image tag works (issues, chat, slides); MP4 where a video tag works (smaller, smoother); the animated SVG for READMEs and docs (smallest, sharpest, loops). Always set `window_background` first. The first export of a scene takes about 20–60 s (svg-term via npx, then rasterising): run it in the background and poll.
 
 ## Needs
 

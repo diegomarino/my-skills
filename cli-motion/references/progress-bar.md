@@ -2,6 +2,12 @@
 
 **Default:** on, 4 px high, in the theme accent colour over a track derived from the theme background.
 
+**Alternatives:** on is the default; `progress_color`, `progress_height`, `progress_track`, or `progress_bar: false`.
+
+**Example:**
+
+![the accent progress bar along the bottom edge](../examples/quick-demo.svg)
+
 ```yaml
 style:
   progress_bar: true

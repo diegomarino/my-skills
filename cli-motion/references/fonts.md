@@ -2,6 +2,12 @@
 
 **Default:** JetBrains Mono, 14 px.
 
+**Alternatives:** JetBrains Mono is the default; Fira Code, Cascadia Code, IBM Plex Mono, Source Code Pro, any `font_size`.
+
+**Example:**
+
+![font × theme contact sheet](../examples/preview-sheet.png)
+
 ```yaml
 style:
   font: Fira Code          # JetBrains Mono | Fira Code | Cascadia Code | IBM Plex Mono | Source Code Pro

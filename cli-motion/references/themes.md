@@ -2,6 +2,10 @@
 
 **Default:** `catppuccin-mocha`. **Alternatives:** the 25 themes copied from tui-design (`node scripts/cli-motion.mjs themes`): catppuccin (latte, frappe, macchiato, mocha), dracula (classic, alucard), everforest, gruvbox, kanagawa, nord-dark, onedark, rose-pine, solarized, tokyonight (day, moon, night, storm), each with its dark/light variants.
 
+**Example:**
+
+![the same scene in several themes](../examples/preview-sheet.png)
+
 ```yaml
 style:
   theme: tokyonight-night

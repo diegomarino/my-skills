@@ -2,6 +2,12 @@
 
 **Defaults:** typed text is bold in the theme's foreground colour (`typed_style: "bold fg:foreground"`), output is normal weight, comments are grey (`comment_style: "fg:bright-black"`).
 
+**Alternatives:** bold foreground for typed text is the default; any style string for `typed_style`, `output_style`, `comment_style`, plus user-defined named styles.
+
+**Example:**
+
+![accent, strong, muted and warn highlights](../examples/quick-demo.svg)
+
 The gh-delta demos type in bold bright white (`\x1b[1;97m`). Bright white is a theme slot that is dim or invisible in some themes (catppuccin's is darker than its foreground; light themes make it unreadable), so cli-motion uses the theme foreground in bold: the same "bold and brightest" look on every theme.
 
 ## Style syntax

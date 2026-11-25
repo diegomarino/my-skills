@@ -8,6 +8,12 @@ node scripts/cli-motion.mjs preview --fonts "Fira Code,JetBrains Mono" --sizes 1
 node scripts/cli-motion.mjs preview --fonts all --themes all --out sheet.html
 ```
 
+**Default:** a PNG sheet of all five fonts × 14 px × three themes. **Alternatives:** `--out sheet.html` for a browser grid; `--fonts`, `--sizes`, `--themes` narrow or widen it.
+
+**Example:**
+
+![a preview contact sheet](../examples/preview-sheet.png)
+
 | Flag | Default | Notes |
 |---|---|---|
 | `--fonts` | all five | comma list or `all` |

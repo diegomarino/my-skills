@@ -65,4 +65,12 @@ Effects draw random numbers (decrypt glyphs, glitch bands) from their own LCG se
 
 For a real animation prefer the native effects above. To use an external tool's frames, record them yourself (`asciinema rec -c "tte …" out.cast`) and render that cast with `npx -y svg-term-cli@2.1.1`.
 
-Example: `examples/banner-effects.scene.yaml` (every effect, one scene each).
+**Alternatives:** the nine effects in the table above.
+
+**Example:** `examples/banner-effects.scene.yaml` (every effect, one scene each):
+
+![all nine banner effects](../examples/banner-effects.svg)
+
+## When to use
+
+One effect banner opens a hero animation or a scene; keep colour effects (`rainbow`, `gradient-sweep`) to one banner per clip because of their size, and prefer `type`, `lines` or `glitch` for cheap motion.

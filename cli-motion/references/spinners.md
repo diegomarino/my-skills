@@ -2,6 +2,10 @@
 
 **Default:** `dots` (⠋⠙⠹…). **Alternatives:** `line` (`-\|/`), `arc` (◜◠◝), `bounce`, `bar` (a fake progress bar that fills over the duration).
 
+**Example:**
+
+![arc and bar spinners](../examples/multi-scene.svg)
+
 ```yaml
 steps:
   - spinner: { text: "rendering", for: 1.5s, done: "[ok]✓[/] rendered" }
