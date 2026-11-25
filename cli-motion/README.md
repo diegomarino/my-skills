@@ -47,4 +47,4 @@ node --test cli-motion/tests/*.test.mjs
 node cli-motion/scripts/sync-themes.mjs --check     # themes match ../tui-design
 ```
 
-Themes come from [tui-design](../tui-design/) (MIT/Apache-2.0 palettes, each theme file keeps its license and sources). Options implemented in later releases (fonts, window shadow, dark/light pairs, GIF/MP4 export, preview) are already accepted in `assets/defaults.yaml` and marked there.
+Themes come from [tui-design](../tui-design/) (MIT/Apache-2.0 palettes, each theme file keeps its license and sources). Options implemented in later releases (dark/light pairs, GIF/MP4 export) are already accepted in `assets/defaults.yaml` and marked there.

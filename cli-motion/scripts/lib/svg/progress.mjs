@@ -3,6 +3,9 @@
 // SMIL <animate> grows a fill rect from 0 to full width over the cast duration. SMIL
 // works when the SVG is embedded as an <img>, as GitHub renders READMEs, where CSS
 // from the page cannot reach it. The SVG stays text, so diffs stay reviewable.
+//
+// The bar is drawn inside the window's clipped group (see frame.mjs), so it follows the
+// rounded corners of the frame.
 
 import { hexToRgb } from '../scene/style.mjs';
 
@@ -19,25 +22,14 @@ export function progressColours(style, theme) {
   return { fill, track };
 }
 
-export function addProgressBar(svg, { duration, height, fill, track, once = false }) {
-  const root = svg.match(/<svg[^>]*\bwidth="([\d.]+)"[^>]*\bheight="([\d.]+)"/);
-  if (!root) throw new Error('could not read width/height from the SVG root');
-  const width = Number(root[1]);
-  const total = Number(root[2]);
-  const y = (total - height).toFixed(2);
-  const radius = svg.match(/<rect width="[\d.]+" height="[\d.]+" rx="([\d.]+)"/)?.[1];
-  const clip = radius
-    ? `<clipPath id="cm-clip"><rect width="${width}" height="${total}" rx="${radius}" ry="${radius}"/></clipPath>`
-    : '';
+/** Markup of the bar for a window at (x, y) of `width` x `windowHeight`; clip it with the window. */
+export function progressMarkup({ x, y, width, windowHeight, duration, height, fill, track, once = false }) {
+  const top = y + windowHeight - height;
   const repeat = once ? 'repeatCount="1" fill="freeze"' : 'repeatCount="indefinite"';
-  const bar =
-    clip +
-    `<g${clip ? ' clip-path="url(#cm-clip)"' : ''}>` +
-    `<rect x="0" y="${y}" width="${width}" height="${height}" fill="${track}"/>` +
-    `<rect x="0" y="${y}" width="0" height="${height}" fill="${fill}">` +
+  return (
+    `<rect x="${x}" y="${top}" width="${width}" height="${height}" fill="${track}"/>` +
+    `<rect x="${x}" y="${top}" width="0" height="${height}" fill="${fill}">` +
     `<animate attributeName="width" values="0;${width}" dur="${duration}s" ${repeat} calcMode="linear"/>` +
-    `</rect></g>`;
-  const out = svg.replace(/<\/svg>\s*$/, `${bar}</svg>`);
-  if (out === svg) throw new Error('could not find the closing </svg> to inject before');
-  return out;
+    `</rect>`
+  );
 }

@@ -4,9 +4,20 @@
   "private": true,
   "description": "Runtime dependencies of the cli-motion skill. Installed with `npm ci` into the user cache on first use; never into the skill folder.",
   "type": "module",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
+    "@fontsource/cascadia-code": "5.3.0",
+    "@fontsource/dejavu-mono": "5.3.0",
+    "@fontsource/fira-code": "5.3.0",
+    "@fontsource/ibm-plex-mono": "5.3.0",
+    "@fontsource/jetbrains-mono": "5.3.0",
+    "@fontsource/source-code-pro": "5.3.1",
+    "@resvg/resvg-js": "2.6.2",
+    "cfonts": "3.3.1",
     "figlet": "1.8.0",
+    "subset-font": "2.9.0",
     "yaml": "2.8.1"
   }
 }

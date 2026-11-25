@@ -3,48 +3,48 @@ import { join } from 'node:path';
 import { test } from 'node:test';
 import { EXAMPLES, SIMPLE, loadScene, svg, tmpProject } from './helpers.mjs';
 
-const render = (yaml, fn = svg.renderAnimated) => {
+const render = async (yaml, fn = svg.renderAnimated) => {
   const dir = tmpProject({ 'a.scene.yaml': yaml });
   return fn(loadScene(join(dir, 'a.scene.yaml')));
 };
 
-test('same scene twice gives identical SVG bytes', () => {
-  assert.equal(render(SIMPLE), render(SIMPLE));
+test('same scene twice gives identical SVG bytes', async () => {
+  assert.equal(await render(SIMPLE), await render(SIMPLE));
 });
 
-test('no translateX is left: frames are stationary and toggled by visibility', () => {
-  const out = render(SIMPLE);
+test('no translateX is left: frames are stationary and toggled by visibility', async () => {
+  const out = await render(SIMPLE);
   assert.ok(!out.includes('translateX'));
   assert.match(out, /visibility:hidden;animation:overlay-0 [\d.]+s step-end infinite/);
   assert.ok(!/<svg x="\d+">/.test(out));
 });
 
-test('progress bar is on by default, uses SMIL, and off removes it', () => {
-  const on = render(SIMPLE);
+test('progress bar is on by default, uses SMIL, and off removes it', async () => {
+  const on = await render(SIMPLE);
   assert.match(on, /<animate attributeName="width" values="0;\d+"/);
-  const off = render(SIMPLE.replace('final_hold: 2s', 'final_hold: 2s, progress_bar: false'));
+  const off = await render(SIMPLE.replace('final_hold: 2s', 'final_hold: 2s, progress_bar: false'));
   assert.ok(!off.includes('<animate'));
-  assert.ok(!off.includes('cm-clip'));
+  assert.ok(!off.includes('width="0"'));
 });
 
-test('progress bar colour and height are configurable', () => {
-  const out = render(SIMPLE.replace('final_hold: 2s', 'final_hold: 2s, progress_color: "#ff0000", progress_height: 6'));
+test('progress bar colour and height are configurable', async () => {
+  const out = await render(SIMPLE.replace('final_hold: 2s', 'final_hold: 2s, progress_color: "#ff0000", progress_height: 6'));
   assert.match(out, /height="6" fill="#ff0000"/);
 });
 
-test('theme colours reach the SVG', () => {
-  const out = render(SIMPLE.replace('final_hold: 2s', 'final_hold: 2s, theme: nord-dark'));
+test('theme colours reach the SVG', async () => {
+  const out = await render(SIMPLE.replace('final_hold: 2s', 'final_hold: 2s, theme: nord-dark'));
   assert.match(out, /#2e3440/i);
 });
 
-test('the final hold is part of the animation length', () => {
-  const out = render(SIMPLE);
+test('the final hold is part of the animation length', async () => {
+  const out = await render(SIMPLE);
   const dur = Number(out.match(/overlay-0 ([\d.]+)s/)[1]);
   assert.ok(dur > 2, `duration ${dur}`);
 });
 
-test('once: plays a single time and holds the last frame; no restart', () => {
-  const out = render(SIMPLE.replace('final_hold: 2s', 'final_hold: 2s, playback: once'));
+test('once: plays a single time and holds the last frame; no restart', async () => {
+  const out = await render(SIMPLE.replace('final_hold: 2s', 'final_hold: 2s, playback: once'));
   assert.ok(!out.includes('infinite'));
   assert.match(out, /step-end 1 forwards/);
   assert.match(out, /repeatCount="1" fill="freeze"/);
@@ -53,24 +53,24 @@ test('once: plays a single time and holds the last frame; no restart', () => {
   assert.ok(css.endsWith('100%{visibility:visible}}'), css);
 });
 
-test('fade: an opacity ramp on the next scene while the old frame stays painted', () => {
-  const out = render('scenes:\n  - steps: [{comment: one}]\n  - transition: fade\n    steps: [{command: x}]\n');
+test('fade: an opacity ramp on the next scene while the old frame stays painted', async () => {
+  const out = await render('scenes:\n  - steps: [{comment: one}]\n  - transition: fade\n    steps: [{command: x}]\n');
   assert.match(out, /@keyframes fade-\d+\{0%,[\d.]+%\{opacity:0\}[\d.]+%\{opacity:1\}100%\{opacity:1\}\}/);
   assert.ok(!out.includes('translateX'));
 });
 
-test('still: a single frame, no animation, final frame by default', () => {
-  const out = render(SIMPLE, svg.renderStill);
+test('still: a single frame, no animation, final frame by default', async () => {
+  const out = await render(SIMPLE, svg.renderStill);
   assert.ok(!out.includes('@keyframes'));
   assert.ok(out.includes('hi'));
-  const early = render(SIMPLE, (b) => svg.renderStill(b, 0));
+  const early = await render(SIMPLE, (b) => svg.renderStill(b, 0));
   assert.ok(!early.includes('hi</text>') || early.length < out.length);
-  assert.throws(() => render(SIMPLE, (b) => svg.renderStill(b, 'later')), /--at must be/);
+  await assert.rejects(() => render(SIMPLE, (b) => svg.renderStill(b, 'later')), /--at must be/);
 });
 
-test('the shipped examples render', () => {
+test('the shipped examples render', async () => {
   for (const f of ['quick-demo.scene.yaml', 'multi-scene.scene.yaml']) {
-    const out = svg.renderAnimated(loadScene(join(EXAMPLES, f)));
+    const out = await svg.renderAnimated(loadScene(join(EXAMPLES, f)));
     assert.ok(out.startsWith('<svg') && !out.includes('translateX'), f);
   }
 });

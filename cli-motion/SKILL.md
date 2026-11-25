@@ -1,7 +1,7 @@
 ---
 name: cli-motion
 description: Turns a declarative YAML scene (typed commands, output with highlights, spinners, real captured commands, banners, scene transitions) into a crisp animated SVG terminal recording or a still, themed with any of 25 palettes. Use when asked to make a terminal demo, CLI animation, README hero, or screencast-style SVG for a command-line tool, without recording a real terminal. Output is deterministic, so regenerating gives byte-identical files.
-compatibility: Node 20+. Network on first run (npm ci into the user cache, svg-term via npx). ffmpeg optional (MP4 export, later release). Writes nothing inside the skill folder.
+compatibility: Node 20+. Network on first run (npm ci into the user cache, svg-term via npx). ffmpeg optional (MP4 export, later release). Nerd Font (powerline prompt) downloaded once on demand. Writes nothing inside the skill folder.
 ---
 
 # cli-motion
@@ -36,13 +36,17 @@ steps:
 | `still <scene> [--at <ms\|end>] [-o out.svg]` | a single frame |
 | `themes [--json]` | list the 25 themes |
 | `doctor [--install]` | Node version, ffmpeg, dependency cache |
-| `export`, `preview`, `fonts` | arrive in later releases |
+| `fonts [--json]` | the five fonts, their packages, Nerd Font cache state |
+| `preview [--fonts] [--sizes] [--themes] [--out sheet.png\|html]` | contact sheet of font × size × theme, each cell labelled |
+| `export` | arrives in a later release |
 
 ## Writing a scene
 
-A scene file has `style:` (options) and `scenes:` (or a bare `steps:`). Steps: `command`, `type`, `output` (with `[accent]…[/]` highlights), `comment`, `pause`, `spinner`, `run` (executes a real command and keeps its ANSI colours), `clear`, `prompt`. Scenes can have a `title:` banner and a `transition` of `cut`, `clear` or `fade`.
+A scene file has `style:` (options) and `scenes:` (or a bare `steps:`). Steps: `command`, `type`, `output` (with `[accent]…[/]` highlights), `comment`, `pause`, `spinner`, `run` (executes a real command and keeps its ANSI colours), `clear`, `prompt`. Scenes can have a `title:` banner (figlet, or cfonts gradients) and a `transition` of `cut`, `clear` or `fade`.
 
 Every option has a default in `assets/defaults.yaml`; settings layer as defaults < project `cli-motion.yaml` < scene `style:` < per-scene/per-step options. Unknown keys fail with the valid ones listed, so fix the key rather than guessing.
+
+Choosing a look: run `preview` for a labelled contact sheet and pick by number. The window frame (title bar, dots, radius, shadow) is ours: see [window](references/window.md).
 
 Habits that work: keep clips under 20 s; one idea per scene; end on a waiting `prompt: true` or the key output; use `run` rather than typing fake output when the command is safe and deterministic; use `hold:` or `final_hold` so people can read the last frame; use `speed` instead of shortening commands.
 
@@ -51,6 +55,7 @@ Habits that work: keep clips under 20 s; one idea per scene; end on a waiting `p
 - [scene-format](references/scene-format.md): every step and option, with an example
 - [themes](references/themes.md), [prompts](references/prompts.md), [text-styles](references/text-styles.md), [cursor](references/cursor.md)
 - [spinners](references/spinners.md), [timing](references/timing.md), [transitions](references/transitions.md), [progress-bar](references/progress-bar.md)
+- [window](references/window.md), [fonts](references/fonts.md), [banners](references/banners.md), [preview](references/preview.md)
 - [rendering-pitfalls](references/rendering-pitfalls.md): anti-shimmer, final hold, `--at`
 
 Examples: `examples/quick-demo.scene.yaml` and `examples/multi-scene.scene.yaml` with their rendered `.svg` files.
