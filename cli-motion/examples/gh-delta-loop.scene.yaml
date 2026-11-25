@@ -1,0 +1,51 @@
+# The common PR loop from gh-delta (https://github.com/diegomarino/gh-delta), recreated as a cli-motion scene.
+# Text and colours are the real gh-delta output, written as `output:` blocks so it renders without gh-delta installed.
+name: gh-delta - common PR loop
+style:
+  theme: tokyonight-night
+  window_title: "gh-delta — common PR loop"
+  prompt: simple
+  width: 110
+  height: 24
+  typed_style: "bold fg:bright-white"
+  line_delay: 0.08
+  typing_delay: 0.018
+  typing_jitter: 0.03
+  final_hold: 3s
+  styles:
+    amber: "bold fg:yellow"
+    muted: "fg:#737aa2"
+steps:
+  - command: |-
+      while true; do
+        gh-delta \
+          --repo owner/repo \
+          --monitor-id pr-loop-60-secs \
+          --state-dir .gh-delta \
+          --entities pr \
+          --format text
+        sleep 60
+      done
+    hold: 2.5s
+  - output: "\n[muted]12:00 · tick 1 · monitor pr-loop-60-secs[/]\n2026-09-21T12:00:00.000Z | 0 delta(s)\n\nBaseline seeded for owner/repo (monitor: pr-loop-60-secs).\nNo action taken."
+    hold: 3.2s
+  - output: "\n[amber][GitHub activity][/]\n[amber]alice opened PR #42 \"Add billing webhook\"[/]\n[amber]CI started: lint, test-unit[/]"
+    hold: 2.8s
+  - output: "\n[muted]12:01 · tick 2 · monitor pr-loop-60-secs[/]\n2026-09-21T12:01:00.000Z | 1 delta(s)\n\nowner/repo | PR #42 \"Add billing webhook\": new\nclasses: new\nsuggested action: new item. Read it and queue or recommend review."
+    hold: 3.2s
+  - output: "\n[muted]12:02 · tick 3 · monitor pr-loop-60-secs[/]\n2026-09-21T12:02:00.000Z | 0 delta(s)\n\nNo GitHub deltas since the last snapshot."
+    hold: 3.2s
+  - output: "\n[amber][GitHub activity][/]\n[amber]test-unit failed[/]"
+    hold: 2.8s
+  - output: "\n[muted]12:03 · tick 4 · monitor pr-loop-60-secs[/]\n2026-09-21T12:03:00.000Z | 1 delta(s)\n\nowner/repo | PR #42 \"Add billing webhook\": ci-changed\nclasses: ci-changed\nsuggested action: CI/review changed. Read checks and review threads before merge."
+    hold: 3.2s
+  - output: "\n[amber][GitHub activity][/]\n[amber]alice pushed fix 9f31c2a[/]"
+    hold: 2.8s
+  - output: "\n[muted]12:04 · tick 5 · monitor pr-loop-60-secs[/]\n2026-09-21T12:04:00.000Z | 1 delta(s)\n\nowner/repo | PR #42 \"Add billing webhook\": head-changed, ci-changed\nclasses: head-changed, ci-changed\nsuggested action: CI/review changed. Read checks and review threads before merge."
+    hold: 3.2s
+  - output: "\n[amber][GitHub activity][/]\n[amber]all checks passed[/]"
+    hold: 2.8s
+  - output: "\n[muted]12:05 · tick 6 · monitor pr-loop-60-secs[/]\n2026-09-21T12:05:00.000Z | 1 delta(s)\n\nowner/repo | PR #42 \"Add billing webhook\": ci-changed\nclasses: ci-changed\nsuggested action: CI/review changed. Read checks and review threads before merge."
+    hold: 3.2s
+  - output: "\n[muted]12:06 · tick 7 · monitor pr-loop-60-secs[/]\n2026-09-21T12:06:00.000Z | 0 delta(s)\n\nNo GitHub deltas since the last snapshot."
+    hold: 5s

@@ -50,6 +50,18 @@ GIF version:
 
 ![banner effects](banner-effects.svg)
 
+## gh-delta-loop: a real CLI's PR-watching loop, recreated from gh-delta's own demo
+
+The common PR loop from [gh-delta](https://github.com/diegomarino/gh-delta): a multi-line `while` command, then seven ticks of real output with yellow `[GitHub activity]` notes between them. It uses `output:` steps with the exact gh-delta text, so it renders without gh-delta installed. The scene is a 110-column terminal with `height: 24`, so the screen scrolls like a real one.
+
+[`gh-delta-loop.scene.yaml`](gh-delta-loop.scene.yaml) · [SVG](gh-delta-loop.svg) · [GIF](gh-delta-loop.gif) · [MP4](gh-delta-loop.mp4)
+
+![gh-delta loop](gh-delta-loop.svg)
+
+GIF version:
+
+![gh-delta loop GIF](gh-delta-loop.gif)
+
 ## preview sheet: a numbered grid of fonts, sizes and themes to pick from
 
 `preview` renders font × size × theme as one labelled PNG ([preview](../references/preview.md)).
