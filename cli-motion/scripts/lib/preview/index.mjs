@@ -16,7 +16,7 @@ import { renderStillFramed } from '../svg/index.mjs';
 
 export const PREVIEW_DEFAULTS = {
   fonts: FONT_NAMES,
-  sizes: [16],
+  sizes: [14],
   themes: ['catppuccin-mocha', 'tokyonight-night', 'solarized-light'],
 };
 

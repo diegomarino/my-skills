@@ -1,11 +1,11 @@
 # Fonts
 
-**Default:** JetBrains Mono, 16 px.
+**Default:** JetBrains Mono, 14 px.
 
 ```yaml
 style:
   font: Fira Code          # JetBrains Mono | Fira Code | Cascadia Code | IBM Plex Mono | Source Code Pro
-  font_size: 16            # px, any positive number
+  font_size: 14            # px, any positive number
   font_nerd: auto          # auto | true | false
 ```
 

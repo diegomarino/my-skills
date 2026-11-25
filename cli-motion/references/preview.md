@@ -3,7 +3,7 @@
 `cli-motion preview` renders one mini scene across font × size × theme and lays the results out as a contact sheet, so you can look and say "number 7".
 
 ```bash
-node scripts/cli-motion.mjs preview                                  # all 5 fonts × 16 px × 3 themes → cli-motion-preview.png
+node scripts/cli-motion.mjs preview                                  # all 5 fonts × 14 px × 3 themes → cli-motion-preview.png
 node scripts/cli-motion.mjs preview --fonts "Fira Code,JetBrains Mono" --sizes 12,14,16 --themes nord-dark,dracula-classic --out sheet.png
 node scripts/cli-motion.mjs preview --fonts all --themes all --out sheet.html
 ```
@@ -11,7 +11,7 @@ node scripts/cli-motion.mjs preview --fonts all --themes all --out sheet.html
 | Flag | Default | Notes |
 |---|---|---|
 | `--fonts` | all five | comma list or `all` |
-| `--sizes` | `16` | px, comma list |
+| `--sizes` | `14` | px, comma list |
 | `--themes` | `catppuccin-mocha,tokyonight-night,solarized-light` | ids from `cli-motion themes`, or `all` |
 | `--out` | `cli-motion-preview.png` | `.png` or `.html` |
 
