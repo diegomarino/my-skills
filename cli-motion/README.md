@@ -25,9 +25,9 @@ Then ask your agent for a terminal demo. The installer needs Node 22.20+ (its ow
 The skill lives in your agent's skill folder, so call its script by path from your project root. The installer prints the destination; for a project install it is `.agents/skills/cli-motion` (and `.claude/skills/cli-motion` for Claude Code). In a my-skills checkout it is `cli-motion/`.
 
 ```bash
-CLI="node .agents/skills/cli-motion/scripts/cli-motion.mjs"   # or .claude/skills/…, ~/.claude/skills/…, cli-motion/
-$CLI --help
-$CLI doctor        # Node, npx, ffmpeg + libx264, dependency cache, a test render
+CLI=.agents/skills/cli-motion/scripts/cli-motion.mjs   # or .claude/skills/…, ~/.claude/skills/…, cli-motion/
+node "$CLI" --help
+node "$CLI" doctor        # Node, npx, ffmpeg + libx264, dependency cache, a test render
 ```
 
 ## Requirements
@@ -52,9 +52,9 @@ steps:
   - spinner: { text: "rendering", for: 1.5s, done: "[ok]✓[/] wrote [accent]demo.svg[/]" }
   - prompt: true
 YAML
-$CLI render demo.scene.yaml                       # → demo.svg
-$CLI export demo.scene.yaml --out ./out           # → out/demo.gif and out/demo.mp4
-$CLI preview --out ./sheet.png                    # contact sheet of fonts × sizes × themes
+node "$CLI" render demo.scene.yaml                       # → demo.svg
+node "$CLI" export demo.scene.yaml --out ./out           # → out/demo.gif and out/demo.mp4
+node "$CLI" preview --out ./sheet.png                    # contact sheet of fonts × sizes × themes
 ```
 
 Then embed it: `![demo](demo.svg)`. See [`examples/`](examples/README.md) for more scenes with their rendered output.
@@ -64,9 +64,9 @@ A `run: "cmd"` step executes that command on every render. Check each one before
 ## More commands
 
 ```bash
-$CLI still  demo.scene.yaml --at end -o demo.still.svg   # a single frame
-$CLI export demo.scene.yaml --gif --scale 1 --out ./out  # a small GIF only
-$CLI themes                                              # list the 25 themes (also: fonts)
+node "$CLI" still  demo.scene.yaml --at end -o demo.still.svg   # a single frame
+node "$CLI" export demo.scene.yaml --gif --scale 1 --out ./out  # a small GIF only
+node "$CLI" themes                                              # list the 25 themes (also: fonts)
 ```
 
 Inside a my-skills checkout, add `-o`/`--out` to anything you run on the shipped examples, or the output lands next to them.

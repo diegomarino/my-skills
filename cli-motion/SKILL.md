@@ -13,8 +13,8 @@ Scene in, animation out. You describe a terminal session in YAML; cli-motion gen
 Every command is `node <skill-dir>/scripts/cli-motion.mjs <command>`, from the project where the output should land. `<skill-dir>` is the folder this file is in: `.agents/skills/cli-motion` or `.claude/skills/cli-motion` in a project install, `~/.claude/skills/cli-motion` at user level, `cli-motion/` in a my-skills checkout. Set it once per shell:
 
 ```bash
-CLI="node .claude/skills/cli-motion/scripts/cli-motion.mjs"    # adjust to <skill-dir>
-$CLI --help                                                     # command and flag syntax
+CLI=.claude/skills/cli-motion/scripts/cli-motion.mjs    # adjust to <skill-dir>
+node "$CLI" --help                                       # command and flag syntax
 ```
 
 Run `themes` or `fonts` to list valid values. Option defaults are in `assets/defaults.yaml`.
@@ -49,7 +49,7 @@ steps:
   - prompt: true
 ```
 
-`$CLI render demo.scene.yaml` writes `demo.svg` next to the scene (`-o` to move it, `--cast` to keep the asciicast).
+`node "$CLI" render demo.scene.yaml` writes `demo.svg` next to the scene (`-o` to move it, `--cast` to keep the asciicast).
 
 ## Verify the result
 
