@@ -10,6 +10,20 @@ It generalises the demo pipeline of [gh-delta](https://github.com/diegomarino/gh
 
 Scope: scripted demos. A `run:` step captures a command's finished output only; use a terminal recorder for interactive sessions.
 
+## Banner effects
+
+Banners can animate: `type`, `wipe`, `lines`, `slide`, `rainbow`, `gradient-sweep`, `pulse`, `decrypt` and `glitch`. All nine, one per scene:
+
+![all nine banner effects, one scene each](examples/banner-effects.svg)
+
+See [`references/banner-effects.md`](references/banner-effects.md) for options.
+
+## Real-world example
+
+The common PR loop from [gh-delta](https://github.com/diegomarino/gh-delta), recreated as a cli-motion scene from that project's own demo text and colours ([`gh-delta-loop.scene.yaml`](examples/gh-delta-loop.scene.yaml)). It uses `output:` blocks, so it renders without gh-delta installed.
+
+![gh-delta's PR loop, rendered by cli-motion](examples/gh-delta-loop.svg)
+
 ## Install
 
 Run in your project (the skill is copied into the project's skill folder):
