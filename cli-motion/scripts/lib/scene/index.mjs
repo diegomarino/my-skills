@@ -25,6 +25,31 @@ const EFFECT_KEYS = ['effect', 'duration', 'fps', 'direction', 'cycles'];
 const TITLE_KEYS = ['banner', 'block', 'font', 'subtitle', 'align', 'style', 'engine', 'gradient', ...EFFECT_KEYS];
 export const CFONTS_FONTS = ['block', 'simple', 'simpleBlock', 'simple3d', '3d', 'chrome', 'huge', 'shade', 'slick', 'grid', 'pallet', 'tiny', 'console'];
 const COMMON = ['speed', 'hold'];
+/** Named gradient presets: `gradient: rainbow`. Colours are fixed hex, so output never depends on the theme. */
+export const GRADIENT_PRESETS = {
+  rainbow: ['#ff5555', '#ffb86c', '#f1fa8c', '#50fa7b', '#8be9fd', '#bd93f9', '#ff79c6'],
+  pastel: ['#ffb3ba', '#ffdfba', '#ffffba', '#baffc9', '#bae1ff', '#d4baff'],
+  vice: ['#ff6ac1', '#b46bff', '#57c7ff'],
+  sunset: ['#ff5f6d', '#ff9966', '#ffc371'],
+  ocean: ['#2193b0', '#6dd5ed'],
+  fire: ['#ff4b1f', '#ff9068', '#ffd452'],
+  forest: ['#11998e', '#38ef7d'],
+  mono: ['#ffffff', '#6c6c6c'],
+};
+
+/** A gradient spec (colour list or preset name) → list of colour specs, or null. */
+export function resolveGradient(gradient, where = 'gradient') {
+  if (gradient == null || gradient === false) return null;
+  const list = Array.isArray(gradient) ? gradient : [gradient];
+  if (list.length === 1 && typeof list[0] === 'string' && !list[0].startsWith('#')) {
+    const preset = GRADIENT_PRESETS[list[0].toLowerCase()];
+    if (preset) return preset;
+    if (!Array.isArray(gradient)) {
+      throw new SceneError(`${where}: unknown gradient preset "${list[0]}". Presets: ${Object.keys(GRADIENT_PRESETS).join(', ')}; or give two or more colours`);
+    }
+  }
+  return list;
+}
 const ACTIONS = {
   type: ['text', 'enter', 'prompt', 'bold', 'style'],
   command: ['text'],
@@ -51,6 +76,8 @@ const readJson = (file) => JSON.parse(readFileSync(join(ASSETS_DIR, file), 'utf8
 
 /** Normalise one step into { action, text, opts }. */
 function normaliseStep(step, where) {
+  // a bare scalar names an action that needs no text: `- clear`, `- prompt`
+  if (typeof step === 'string' && ['clear', 'prompt'].includes(step.trim())) step = { [step.trim()]: null };
   if (step == null || typeof step !== 'object' || Array.isArray(step)) {
     throw new SceneError(`${where}: a step is a map like \`- command: "ls"\``);
   }
@@ -251,7 +278,7 @@ class Director {
     checkKeysScene(spec, TITLE_KEYS, `${this.where} title`);
     if (!spec.banner && !spec.block) throw new SceneError(`${this.where}: a banner needs a \`banner:\` text (or a multi-line \`block:\`)`);
     if (spec.banner && spec.block) throw new SceneError(`${this.where}: use \`banner:\` or \`block:\`, not both`);
-    const gradient = spec.gradient ?? this.style.banner_gradient;
+    const gradient = resolveGradient(spec.gradient ?? this.style.banner_gradient, `${this.where} gradient`);
     const effect = this.effectSpec(spec);
     // a gradient-sweep takes its colours from `gradient:` and keeps the figlet engine
     const engine = spec.block ? 'figlet' : spec.engine ?? (gradient && effect?.name !== 'gradient-sweep' ? 'cfonts' : 'figlet');
@@ -396,9 +423,22 @@ class Director {
       throw new SceneError(`${this.where}: a gradient needs at least two colours, e.g. gradient: ["#ff6ac1", "#57c7ff"] or [accent, accent2]`);
     }
     const { render } = dep('cfonts');
-    const out = render(String(spec.banner), {
-      font, gradient: colours, space: false, env: 'node', maxLength: String(this.cast.width), letterSpacing: 1,
-    });
+    // cfonts reads its colour depth from NO_COLOR / FORCE_COLOR / the TTY: pin truecolor so the
+    // cast is the same whatever shell runs us (the SVG needs the colours; the cast is a file)
+    const saved = { NO_COLOR: process.env.NO_COLOR, FORCE_COLOR: process.env.FORCE_COLOR };
+    delete process.env.NO_COLOR;
+    process.env.FORCE_COLOR = '3';
+    let out;
+    try {
+      out = render(String(spec.banner), {
+        font, gradient: colours, space: false, env: 'node', maxLength: String(this.cast.width), letterSpacing: 1,
+        transitionGradient: colours.length > 2,
+      });
+    } finally {
+      for (const [k, v] of Object.entries(saved)) {
+        if (v === undefined) delete process.env[k]; else process.env[k] = v;
+      }
+    }
     if (!out) throw new SceneError(`${this.where}: cfonts could not render the banner "${spec.banner}"`);
     const lines = out.string.replace(/\r/g, '').split('\n');
     const blank = (l) => !l.replace(/\x1b\[[0-9;]*m/g, '').trim();
