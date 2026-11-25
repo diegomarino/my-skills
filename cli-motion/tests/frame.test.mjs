@@ -95,3 +95,18 @@ function tmpAndLoad(yaml) {
   const dir = tmpProject({ 'a.scene.yaml': yaml });
   return loadScene(join(dir, 'a.scene.yaml'));
 }
+
+test('window: none draws no rounded clip; the bar stays inside the bare rectangle', async () => {
+  const bare = await render(withStyle('window: none'));
+  assert.ok(!bare.includes('clip-path'));
+  assert.match(bare, /<animate attributeName="width"/);
+});
+
+test('outer size is whole pixels and the progress bar sits on whole pixels (animated and still)', async () => {
+  for (const out of [await render(SIMPLE), await render(SIMPLE, svg.renderStill)]) {
+    const [w, h] = size(out);
+    assert.ok(Number.isInteger(w) && Number.isInteger(h), `${w}x${h}`);
+  }
+  const bar = (await render(SIMPLE)).match(/<rect x="(\d+)" y="([\d.]+)" width="(\d+)" height="4" fill="#[0-9a-f]+"\/>/);
+  assert.ok(Number.isInteger(Number(bar[2])), `bar y ${bar[2]}`);
+});
