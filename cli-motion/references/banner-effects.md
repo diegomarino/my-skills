@@ -1,6 +1,6 @@
 # Banner effects
 
-A banner (`title:` of a scene, or a `banner:` step) can animate. **Default: no effect**, a static banner. Effects are plain JS, need no extra dependency and are **seeded**: the same scene and `seed` give byte-identical output. The last frame of every effect is exactly the static banner, so the loop ends on the same picture a static banner shows.
+A banner (`title:` of a scene, or a `banner:` step) can animate. **Default: no effect**, a static banner. Effects are plain JS, need no extra dependency and are **seeded**: the same scene, `seed` and renderer give identical output. The last frame of every effect is exactly the static banner, so the loop ends on the same picture a static banner shows.
 
 ```yaml
 style:
@@ -36,14 +36,14 @@ Sizes below are the added SVG size for a 10-column-wide `small` banner ("cli-mot
 
 ## Size cost and frame counts
 
-Every frame is a full screen in the SVG. Reveal effects only change a few cells per frame, and identical neighbouring frames are merged, but **colour effects change every cell on every frame**, so they cost the most. Frames = `fps × duration` (rainbow default: 12 × 2.4 = 29 frames). That is why colour effects default to a low 12 fps. `cli-motion render` prints the frames each effect produced and the final SVG size:
+Every frame is a full screen in the SVG. Reveal effects only change a few cells per frame, and identical neighbouring frames are merged, but **colour effects change every cell on every frame**, so they cost the most. `fps × duration` is the sampling budget (rainbow default: 12 × 2.4 ≈ 29 samples); states that repeat are merged, so reveal effects keep fewer distinct frames than samples. That is why colour effects default to a low 12 fps. `render` prints the distinct frames kept and the samples requested, and the final SVG size:
 
 ```
-cli-motion: banner effect rainbow: 29 frames (12 fps × 2.4s) at scenes[4]
-cli-motion: banner effects added 151 frames; SVG is 376.2 KB. Lower fps or duration …
+cli-motion: banner effect rainbow: 29 distinct frames kept of 29 samples (12 fps × 2.4s; repeated states merge) at scenes[4]
+cli-motion: banner effects added 151 distinct frames; SVG is 376.2 KB. Lower fps or duration …
 ```
 
-To shrink: lower `fps` (8 still looks smooth for a slow sweep), shorten `duration`, use `lines`/`pulse`/`glitch`, a smaller `font` (`small`, `mini`), or put one effect banner in a scene and keep the rest static. GitHub renders README images up to several MB, but a hero SVG under ~300 KB loads instantly.
+To shrink: lower `fps` (8 still looks smooth for a slow sweep), shorten `duration`, use `lines`/`pulse`/`glitch`, a smaller `font` (`small`, `mini`), or put one effect banner in a scene and keep the rest static. GitHub renders README images up to several MB, but a hero SVG under ~300 KB loads quickly (an estimate, not a measurement).
 
 ## Rendering rules
 
@@ -51,7 +51,7 @@ Effects redraw the banner in place (cursor up + rewrite), so svg-term produces o
 
 ## Determinism
 
-Effects draw random numbers (decrypt glyphs, glitch bands) from their own LCG seeded with `seed` (default 42), the effect name and the banner text. Same scene, same bytes. Change `seed:` in `style:` for a different but equally repeatable look.
+Effects draw random numbers (decrypt glyphs, glitch bands) from their own LCG seeded with `seed` (default 42), the effect name and the banner text. Same scene and seed, same cast. Change `seed:` in `style:` for a different but equally repeatable look.
 
 ## Capturing an external tool (optional)
 

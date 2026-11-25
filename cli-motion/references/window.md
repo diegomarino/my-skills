@@ -14,7 +14,7 @@ style:
   window_title: "my-cli"    # null = the scene's `name:`
   window_radius: 8          # px
   window_shadow: true
-  window_background: null   # "#ffffff": opaque colour around the window (for GIF/MP4)
+  window_background: null   # "#ffffff": opaque colour around the window (for GIF/MP4; unset = white on light themes, #0d1117 on dark)
   padding: 18               # px between the text and the window edge
 ```
 
@@ -62,4 +62,4 @@ Only plain shapes, one filter and one clipPath are used: no scripts, `foreignObj
 - GIF: 1-bit transparency only. A soft shadow or anti-aliased rounded corners have partial alpha, which a GIF cannot hold; against an unknown page they leave a fringe of the wrong colour. Use `window_background` set to the page colour (or white) so the edge pixels are blended against it before quantising.
 - MP4 (H.264, yuv420p): no alpha at all. Transparent areas turn black. Same fix: set `window_background`.
 
-So the rule: SVG and PNG keep transparency; for GIF/MP4 always set `window_background`. Raster export arrives in a later release; the option is already honoured by the SVG.
+So the rule: SVG and PNG keep transparency; for GIF/MP4 set `window_background` to the colour of the page they will sit on. Without it the exporter picks a neutral opaque colour (white for light themes, `#0d1117` for dark ones). `preview --out sheet.png` writes PNG; `still` writes SVG.

@@ -26,7 +26,7 @@ svg-term takes the loop duration from the **last event**. A trailing `wait` emit
 
 ## Stills: `--at`
 
-`cli-motion still scene.yaml --at <ms|end>` renders one frame. `end` is the last event minus 100 ms, the final frame after the last output but before the hold ends. The terminal height is `auto` by default (rows of the tallest screen), so nothing scrolls off the final frame; set `height:` yourself only when you want an exact size.
+`cli-motion still scene.yaml --at <ms|end>` renders one frame. `end` is 100 ms before the end, but never before the last real output event (so a final hold shorter than 100 ms still shows the final output): the final frame after the last output but before the hold ends. The terminal height is `auto` by default (rows of the tallest screen), so nothing scrolls off the final frame; set `height:` yourself only when you want an exact size.
 
 ## Other things that bite
 

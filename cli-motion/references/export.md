@@ -10,6 +10,8 @@ node scripts/cli-motion.mjs export demo.scene.yaml --mp4 --fps 60 --out dist/
 
 **Alternatives:** `--gif` or `--mp4` only, `--scale 1|3`, `--fps N`, `--encoder js`.
 
+An explicit `--mp4` fails with advice when ffmpeg (with libx264) is missing; the default (no flag) skips the MP4 with a note and writes the GIF.
+
 **Example:**
 
 ![quick demo as a GIF](../examples/quick-demo.gif)
@@ -42,7 +44,8 @@ GIF size follows the number of distinct frames and their pixels:
 - **Progress bar:** each bar step is one more frame in a GIF. `gif_progress_step: 1s` or `progress_bar: false` shrinks the file; `0.25s` makes it smoother and larger. The MP4 samples the bar at the fps, so it is always smooth and costs almost nothing in H.264.
 - **Length and width:** fewer columns (`width`), shorter holds, higher `speed`.
 - **Typing speed:** every typed character is a frame; `typing_delay` above 0.06 s means fewer, longer frames.
-- Prefer MP4 where a video tag works (a README on GitHub can embed an MP4 via a user-attachments URL): it is usually 5–20× smaller than the GIF and plays smoothly.
+- **No ffmpeg:** the pure-JS GIF can be many times larger than the ffmpeg GIF (measured 607 KiB at 1× vs 42 KiB at 2× for one scene, about 14× in another). Check the file size afterwards; if the budget is tight use `--scale 1`, install ffmpeg, or deliver the animated SVG.
+- Prefer MP4 where a video tag works (a README on GitHub can embed an MP4 via a user-attachments URL): it is typically 5–20× smaller than the GIF (an estimate that varies by scene) and plays smoothly.
 - A palette of ≤256 colours is used exactly; scenes with many anti-aliased colours are reduced to 256 with no dithering, so flat areas stay flat.
 
 ## When to use
@@ -51,4 +54,4 @@ GIF where only an image tag works (issues, chat, slides); MP4 where a video tag 
 
 ## Needs
 
-Node 20+. ffmpeg is optional: required for MP4 (with libx264), optional for GIF.
+Node 20+. ffmpeg with libx264 is required for MP4 and optional for GIF.

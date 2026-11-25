@@ -1,15 +1,16 @@
 # Examples
 
-Each example is a scene file and its rendered output. Regenerate any of them from the skill folder, for example:
+Each example is a scene file and its rendered output. These are maintenance commands for a my-skills checkout (an installed skill is never written to, so `-o`/`--out` is required for scenes inside the skill folder). Run them from the skill folder:
 
-```bash
-node scripts/cli-motion.mjs render examples/quick-demo.scene.yaml -o /tmp/out/quick-demo.svg   # -o/--out is required for scenes inside the skill folder
-node scripts/cli-motion.mjs export examples/quick-demo.scene.yaml --out /tmp/out
-```
+| To regenerate | Command |
+|---|---|
+| a scene's SVG and cast | `node scripts/cli-motion.mjs render examples/quick-demo.scene.yaml --cast -o ./out/quick-demo.svg` |
+| its GIF and MP4 | `node scripts/cli-motion.mjs export examples/quick-demo.scene.yaml --out ./out` |
+| the preview sheet | `node scripts/cli-motion.mjs preview --out ./out/preview-sheet.png` |
 
-Output is deterministic: regenerating gives the same bytes.
+With the same scene and renderer the cast and SVG regenerate byte for byte. GIF and MP4 bytes can differ between encoder versions and machines.
 
-## quick-demo: one scene, typed command, spinner, highlights
+## quick-demo: a command is typed, a spinner runs, the result is highlighted
 
 [`quick-demo.scene.yaml`](quick-demo.scene.yaml) · [SVG](quick-demo.svg) · [GIF](quick-demo.gif) · [MP4](quick-demo.mp4)
 
@@ -19,7 +20,7 @@ GIF version:
 
 ![quick demo GIF](quick-demo.gif)
 
-## framed-demo: gradient banner, powerline prompt, chrome window
+## framed-demo: a gradient title banner, then a powerline prompt in a chrome window
 
 [`framed-demo.scene.yaml`](framed-demo.scene.yaml) · [SVG](framed-demo.svg) · [GIF](framed-demo.gif) · [MP4](framed-demo.mp4)
 
@@ -29,7 +30,7 @@ GIF version:
 
 ![framed demo GIF](framed-demo.gif)
 
-## multi-scene: banner, install, fade to real command output
+## multi-scene: a banner, an install with a spinner and cursor, then a fade into captured command output
 
 Three scenes with `clear` and `fade` transitions, a blinking block cursor, a bar spinner and a `run` step that captures real ANSI output.
 
@@ -41,7 +42,7 @@ GIF version:
 
 ![multi scene GIF](multi-scene.gif)
 
-## banner-effects: all nine banner effects
+## banner-effects: nine banner animations in a row, one per scene
 
 `type`, `wipe`, `lines`, `slide`, `rainbow`, `gradient-sweep`, `pulse`, `decrypt`, `glitch`, one scene each (see [banner-effects](../references/banner-effects.md); the colour effects make this a large SVG).
 
@@ -49,13 +50,13 @@ GIF version:
 
 ![banner effects](banner-effects.svg)
 
-## preview sheet: choosing a look
+## preview sheet: a numbered grid of fonts, sizes and themes to pick from
 
-`cli-motion preview` renders font × size × theme as one labelled PNG ([preview](../references/preview.md)).
+`preview` renders font × size × theme as one labelled PNG ([preview](../references/preview.md)).
 
 ![preview sheet](preview-sheet.png)
 
 ## Notes
 
 - `*.cast` files are the generated asciicasts (kept for byte-diffing; `render --cast` writes them).
-- MP4 files need ffmpeg to regenerate; GIF has a pure-JS fallback.
+- MP4 files need ffmpeg with libx264 to regenerate; GIF has a pure-JS fallback.

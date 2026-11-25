@@ -2,7 +2,7 @@
 
 **Default:** figlet `standard` font, drawn inside the terminal, coloured with `banner_style` (theme accent).
 
-**Alternatives:** figlet `standard` is the default; any other figlet font, or cfonts gradients (`block`, `simple3d`, `chrome` …) when `gradient:` is set.
+**Alternatives:** any other figlet font, or cfonts gradients (`block`, `simple3d`, `chrome` …) when `gradient:` is set (exception: with `effect: gradient-sweep`, `gradient:` picks the sweep colours and figlet stays the engine).
 
 **Example:**
 
@@ -16,7 +16,6 @@ style:
 scenes:
   - title: { banner: "cli-motion", font: small, subtitle: "terminal animations" }
   - title: { banner: "cli", font: block, gradient: ["#ff6ac1", "#57c7ff"] }
-    steps: [ ... ]
 ```
 
 A `title:` is a scene's first thing on screen. Keys: `banner` (text), `font`, `subtitle`, `align` (`center`|`left`), `style` (figlet only), `gradient`, `engine`.
@@ -24,9 +23,9 @@ A `title:` is a scene's first thing on screen. Keys: `banner` (text), `font`, `s
 | Engine | When | `font` means |
 |---|---|---|
 | figlet | default | any figlet font: `standard`, `small`, `mini`, `slant`, `big`, … |
-| cfonts | `gradient:` given (or `engine: cfonts`, or `banner_gradient` set) | `block` (default), `simple`, `simpleBlock`, `simple3d`, `3d`, `chrome`, `huge`, `shade`, `slick`, `grid`, `pallet`, `tiny`, `console` |
+| cfonts | `gradient:` given with a static banner (or `engine: cfonts`, or `banner_gradient` set) | `block` (default), `simple`, `simpleBlock`, `simple3d`, `3d`, `chrome`, `huge`, `shade`, `slick`, `grid`, `pallet`, `tiny`, `console` |
 
-A gradient is two or more colours: `#rrggbb`, a theme colour (`accent`, `accent2`, `success`, `warning`, `error`, `info`) or an ANSI name. Colours are true-colour per glyph, so the SVG keeps them.
+A gradient is two or more colours: `#rrggbb`, a theme colour (`accent`, `accent2`, `success`, `warning`, `error`, `info`), an ANSI name, or one preset name (`rainbow`, `pastel`, `vice`, `sunset`, `ocean`, `fire`, `forest`, `mono`). For `effect: gradient-sweep`, `gradient:` selects the sweep colours and figlet is the default engine. cli-motion asks cfonts for true colour itself, so the result does not depend on `NO_COLOR` or `TERM` in your shell, and the SVG keeps every colour.
 
 Banners can animate (type, wipe, rainbow, decrypt, glitch …): see [banner-effects](banner-effects.md). Step form: `- banner: { text: "done" }`; keys `effect`, `duration`, `fps`, `direction`, `cycles`, `block` (multi-line block instead of text).
 
