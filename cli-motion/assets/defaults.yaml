@@ -13,18 +13,20 @@
 # ── look ────────────────────────────────────────────────────────────────────
 theme: catppuccin-mocha        # any id from `cli-motion themes` (25 tui-design themes)
 theme_light: null              # implemented in a later task: light twin for a <picture> dark/light pair
-font: JetBrains Mono           # implemented in a later task: Fira Code, Cascadia Code, IBM Plex Mono, Source Code Pro
-font_size: 14                  # implemented in a later task
+font: JetBrains Mono           # JetBrains Mono | Fira Code | Cascadia Code | IBM Plex Mono | Source Code Pro (`cli-motion fonts`)
+font_size: 14                  # px
+font_nerd: auto                # auto (Nerd Font variant only when a glyph needs it, e.g. prompt: powerline) | true | false
 window: chrome                 # chrome (title bar + three dots) | plain (no title bar) | none (bare terminal)
-window_shadow: true            # implemented in a later task
-window_radius: 8               # implemented in a later task (px)
-window_background: null        # implemented in a later task: outer colour for GIF/MP4
+window_title: null             # text in the title bar; null = the scene's `name:`
+window_shadow: true            # soft drop shadow (SVG filter)
+window_radius: 8               # px, rounded corners
+window_background: null        # outer colour around the window, e.g. "#ffffff" (GIF/MP4 cannot be transparent)
 padding: 18                    # px between the terminal text and the image edge
 width: 80                      # terminal columns
 height: auto                   # terminal rows, or auto (fits the tallest screen so nothing scrolls off)
 
 # ── prompt ──────────────────────────────────────────────────────────────────
-prompt: simple                 # simple (❯) | dollar ($) | path (~/app ❯) | git (~/app on main ❯) | template | powerline (needs fonts: later task)
+prompt: simple                 # simple (❯) | dollar ($) | path (~/app ❯) | git (~/app on main ❯) | template | powerline (Nerd Font, fetched once)
 prompt_template: "[cwd]{cwd}[/] [prompt]❯[/] "   # used by `prompt: template`; fields {cwd} {branch} {user} {host} {time} {status}
 prompt_cwd: "~/app"
 prompt_branch: main
@@ -73,7 +75,7 @@ spinner: dots                  # dots | line | arc | bounce | bar (see assets/sp
 spinner_style: accent
 banner_font: standard          # any figlet font
 banner_style: accent
-banner_gradient: null          # implemented in a later task: cfonts gradients
+banner_gradient: null          # null = figlet in banner_style; or ["#ff6ac1", "#57c7ff"] (2+ colours) = cfonts gradient; or a cfonts preset name (rainbow, pastel, vice, ...)
 
 # ── playback ────────────────────────────────────────────────────────────────
 playback: loop                 # loop | once (once plays through and holds the last frame)

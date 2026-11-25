@@ -1,0 +1,20 @@
+# Window frame, fonts and banners: a framed demo with a gradient banner and a powerline prompt.
+name: cli-motion · framed demo
+style:
+  theme: tokyonight-night
+  font: JetBrains Mono
+  font_size: 14
+  window: chrome
+  window_radius: 10
+  prompt: powerline
+  width: 64
+  final_hold: 3s
+scenes:
+  - title: { banner: "cli", font: block, gradient: [accent, accent2], subtitle: "terminal animations from YAML" }
+    hold: 1.5s
+  - transition: clear
+    steps:
+      - comment: "# one command, a framed animated SVG"
+      - command: "cli-motion render demo.scene.yaml"
+      - spinner: { text: "rendering", for: 1.2s, done: "[ok]✓[/] wrote [accent]demo.svg[/] in [strong]0.8s[/]" }
+      - prompt: true

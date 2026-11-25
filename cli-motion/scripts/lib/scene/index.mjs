@@ -7,6 +7,7 @@ import { dep } from '../deps.mjs';
 import {
   ASSETS_DIR, ConfigError, applySceneStyle, checkKeys, loadTheme, parseYaml, resolveStyle,
 } from '../config/index.mjs';
+import { fontInfo } from '../fonts/index.mjs';
 import { Cast } from './cast.mjs';
 import { RESET, StyleError, renderMarkup, sgr } from './style.mjs';
 
@@ -19,7 +20,8 @@ export class SceneError extends Error {
 
 const TOP_KEYS = ['name', 'style', 'scenes', 'steps'];
 const SCENE_KEYS = ['title', 'steps', 'transition', 'hold', 'style'];
-const TITLE_KEYS = ['banner', 'font', 'subtitle', 'align', 'style'];
+const TITLE_KEYS = ['banner', 'font', 'subtitle', 'align', 'style', 'engine', 'gradient'];
+export const CFONTS_FONTS = ['block', 'simple', 'simpleBlock', 'simple3d', '3d', 'chrome', 'huge', 'shade', 'slick', 'grid', 'pallet', 'tiny', 'console'];
 const COMMON = ['speed', 'hold'];
 const ACTIONS = {
   type: ['text', 'enter', 'prompt', 'bold', 'style'],
@@ -152,23 +154,38 @@ class Director {
       throw new SceneError(`${this.where}: unknown prompt "${s.prompt}". Valid prompts: ${presets.join(', ')}`);
     }
     const preset = readJson(`prompts/${s.prompt}.json`);
-    if (preset.requires === 'fonts') {
-      throw new SceneError(
-        `${this.where}: the powerline prompt needs a Nerd Font, which arrives with the fonts task. Use prompt: git or prompt: template for now.`,
-      );
-    }
-    const template = preset.template ?? s.prompt_template;
     const fields = {
       cwd: s.prompt_cwd, branch: s.prompt_branch, user: s.prompt_user, host: s.prompt_host,
       time: s.prompt_time, status: s.prompt_status,
     };
-    const filled = template.replace(/\{(\w+)\}/g, (all, name) => {
+    const fill = (template) => template.replace(/\{(\w+)\}/g, (all, name) => {
       if (!(name in fields)) {
         throw new SceneError(`${this.where}: unknown prompt field {${name}}. Valid fields: ${Object.keys(fields).join(', ')}`);
       }
       return String(fields[name]);
     });
+    if (preset.requires === 'nerd-font') {
+      if (s.font_nerd === false) {
+        throw new SceneError(`${this.where}: prompt: powerline needs the Nerd Font variant; remove \`font_nerd: false\` or pick prompt: git.`);
+      }
+      return this.powerline(preset, fill);
+    }
+    const filled = fill(preset.template ?? s.prompt_template);
     return this.markup(filled);
+  }
+
+  /** oh-my-posh-like segments: coloured blocks joined by powerline arrows (U+E0B0). */
+  powerline(preset, fill) {
+    const segs = preset.segments;
+    let out = '';
+    segs.forEach((seg, i) => {
+      out += `${this.sgr(`fg:${seg.fg} bg:${seg.bg}`)}${fill(seg.text)}`;
+      const next = segs[i + 1];
+      out += next
+        ? `${this.sgr(`fg:${seg.bg} bg:${next.bg}`)}${preset.separator}`
+        : `${RESET}${this.sgr(`fg:${seg.bg}`)}${preset.separator}${RESET} `;
+    });
+    return out;
   }
 
   showPrompt() {
@@ -229,22 +246,32 @@ class Director {
     const spec = typeof title === 'string' ? { banner: title } : title;
     checkKeysScene(spec, TITLE_KEYS, `${this.where} title`);
     if (!spec.banner) throw new SceneError(`${this.where}: title needs a \`banner:\` text`);
-    const font = spec.font ?? this.style.banner_font;
-    let art;
-    try {
-      art = figlet.textSync(String(spec.banner), { font, width: 500, whitespaceBreak: false });
-    } catch (err) {
-      throw new SceneError(`${this.where}: figlet font "${font}" failed: ${String(err.message ?? err).split('\n')[0]}. List fonts with: node -e "console.log(require('figlet').fontsSync().join(' '))"`);
+    const gradient = spec.gradient ?? this.style.banner_gradient;
+    const engine = spec.engine ?? (gradient ? 'cfonts' : 'figlet');
+    if (!['figlet', 'cfonts'].includes(engine)) {
+      throw new SceneError(`${this.where}: unknown banner engine "${engine}". Valid engines: figlet, cfonts`);
     }
-    const lines = art.replace(/\s+$/, '').split('\n');
-    const widest = Math.max(...lines.map((l) => l.length));
+    let lines;
+    if (engine === 'cfonts') lines = this.cfontsLines(spec, gradient);
+    else {
+      const font = spec.font ?? this.style.banner_font;
+      let art;
+      try {
+        art = figlet.textSync(String(spec.banner), { font, width: 500, whitespaceBreak: false });
+      } catch (err) {
+        throw new SceneError(`${this.where}: figlet font "${font}" failed: ${String(err.message ?? err).split('\n')[0]}. List fonts with: node -e "console.log(require('figlet').fontsSync().join(' '))"`);
+      }
+      lines = art.replace(/\s+$/, '').split('\n');
+    }
+    const visible = (l) => l.replace(/\x1b\[[0-9;]*m/g, '').length;
+    const widest = Math.max(...lines.map(visible));
     if (widest > this.cast.width) {
-      throw new SceneError(`${this.where}: banner is ${widest} columns wide but the terminal is ${this.cast.width}. Use a shorter text, a smaller banner font (e.g. small, mini) or a wider \`width\`.`);
+      throw new SceneError(`${this.where}: banner is ${widest} columns wide but the terminal is ${this.cast.width}. Use a shorter text, a smaller banner font (e.g. small, mini; cfonts: tiny, simple) or a wider \`width\`.`);
     }
     const align = spec.align ?? 'center';
     const pad = (w) => (align === 'center' ? ' '.repeat(Math.floor((this.cast.width - w) / 2)) : '');
     const styleSpec = this.style.styles[spec.style] ?? spec.style ?? this.style.styles[this.style.banner_style] ?? this.style.banner_style;
-    const open = this.sgr(styleSpec);
+    const open = engine === 'cfonts' ? '' : this.sgr(styleSpec);
     this.cast.setCursorActive(false);
     for (const line of lines) this.cast.out(`${pad(widest)}${open}${line}${RESET}\r\n`, this.d(this.style.line_delay * 1.6));
     if (spec.subtitle) {
@@ -252,6 +279,42 @@ class Director {
       const sub = String(spec.subtitle);
       this.cast.out(`${pad(sub.length)}${this.markup(sub, this.style.comment_style)}\r\n`, this.d(0.3));
     }
+  }
+
+  /** cfonts block letters with a colour gradient; returns lines that carry their own SGR. */
+  cfontsLines(spec, gradient) {
+    const font = spec.font ?? 'block';
+    if (!CFONTS_FONTS.includes(font)) {
+      throw new SceneError(`${this.where}: unknown cfonts font "${font}". Valid cfonts fonts: ${CFONTS_FONTS.join(', ')}`);
+    }
+    const colours = (Array.isArray(gradient) ? gradient : [gradient])
+      .map((c) => (c == null ? null : this.hex(String(c))));
+    if (colours.length < 2) {
+      throw new SceneError(`${this.where}: a gradient needs at least two colours, e.g. gradient: ["#ff6ac1", "#57c7ff"] or [accent, accent2]`);
+    }
+    const { render } = dep('cfonts');
+    const out = render(String(spec.banner), {
+      font, gradient: colours, space: false, env: 'node', maxLength: String(this.cast.width), letterSpacing: 1,
+    });
+    if (!out) throw new SceneError(`${this.where}: cfonts could not render the banner "${spec.banner}"`);
+    const lines = out.string.replace(/\r/g, '').split('\n');
+    const blank = (l) => !l.replace(/\x1b\[[0-9;]*m/g, '').trim();
+    while (lines.length && blank(lines[0])) lines.shift();
+    while (lines.length && blank(lines.at(-1))) lines.pop();
+    return lines.map((l) => l.replace(/\s+$/, ''));
+  }
+
+  /** Colour spec (#rrggbb | theme colour | ansi name) → #rrggbb. */
+  hex(spec) {
+    if (spec.startsWith('#')) return spec;
+    const t = this.theme;
+    const base = ['black', 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'white'];
+    const bright = spec.startsWith('bright-');
+    const idx = base.indexOf(bright ? spec.slice(7) : spec);
+    if (idx >= 0) return t.terminal.ansi[idx + (bright ? 8 : 0)];
+    if (['foreground', 'background', 'cursor'].includes(spec)) return t.terminal[spec];
+    if (t.accents?.[spec]) return t.accents[spec];
+    throw new SceneError(`${this.where}: unknown colour "${spec}" in gradient. Use #rrggbb, a theme colour (accent, accent2, success, warning, error, info) or an ANSI name`);
   }
 
   spinner(text, opts) {
@@ -473,6 +536,11 @@ export function loadScene(sceneFile, { projectConfigPath } = {}) {
     sceneDir: baseDir, sceneStyle: doc.style, projectConfigPath, sceneFile,
   });
   const theme = loadTheme(style.theme);
+  try {
+    fontInfo(style.font);
+  } catch (err) {
+    throw new SceneError(`${sceneFile}: ${err.message}`);
+  }
   const result = buildCast(doc, { style, theme, baseDir, file: sceneFile });
   return { ...result, projectConfig, file, baseDir, name: doc.name };
 }

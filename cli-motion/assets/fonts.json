@@ -1,0 +1,85 @@
+{
+ "_comment": "Font registry. `package` = @fontsource package (installed with the lockfile). `nerd` = Nerd Font TTFs downloaded once into the cache, pinned to a nerd-fonts tag with sha256.",
+ "nerd_fonts_version": "v3.4.0",
+ "fallback": [
+  "dejavu-mono",
+  "cascadia-code"
+ ],
+ "fonts": {
+  "JetBrains Mono": {
+   "package": "jetbrains-mono",
+   "nerd": {
+    "family": "JetBrainsMono Nerd Font",
+    "regular": {
+     "url": "https://cdn.jsdelivr.net/gh/ryanoasis/nerd-fonts@v3.4.0/patched-fonts/JetBrainsMono/Ligatures/Regular/JetBrainsMonoNerdFont-Regular.ttf",
+     "sha256": "0ec29a68b539ece7078fc714cebff0c0accb2f4948f8f7963d9f5e86633b12d9"
+    },
+    "bold": {
+     "url": "https://cdn.jsdelivr.net/gh/ryanoasis/nerd-fonts@v3.4.0/patched-fonts/JetBrainsMono/Ligatures/Bold/JetBrainsMonoNerdFont-Bold.ttf",
+     "sha256": "e82e27a7f37c9a0a13cc4e417503a149c6a0280586930772d2ebed803159c864"
+    }
+   },
+   "advance": 0.6
+  },
+  "Fira Code": {
+   "package": "fira-code",
+   "nerd": {
+    "family": "FiraCode Nerd Font",
+    "regular": {
+     "url": "https://cdn.jsdelivr.net/gh/ryanoasis/nerd-fonts@v3.4.0/patched-fonts/FiraCode/Regular/FiraCodeNerdFont-Regular.ttf",
+     "sha256": "29b619655612cb273e034737408b9508a04beb63c1ddbdfaa9a6846c409c7a2e"
+    },
+    "bold": {
+     "url": "https://cdn.jsdelivr.net/gh/ryanoasis/nerd-fonts@v3.4.0/patched-fonts/FiraCode/Bold/FiraCodeNerdFont-Bold.ttf",
+     "sha256": "594a51c86afb58c1160df286e45dc551eeeba4d5f0e6edb1c304fc43ab8a0a09"
+    }
+   },
+   "advance": 0.6
+  },
+  "Cascadia Code": {
+   "package": "cascadia-code",
+   "nerd": {
+    "family": "CaskaydiaCove Nerd Font",
+    "regular": {
+     "url": "https://cdn.jsdelivr.net/gh/ryanoasis/nerd-fonts@v3.4.0/patched-fonts/CascadiaCode/CaskaydiaCoveNerdFont-Regular.ttf",
+     "sha256": "701d7ec08f58f07251c1758361c5d1ab57ba0a867dd378cbb0fa52e1d2beccad"
+    },
+    "bold": {
+     "url": "https://cdn.jsdelivr.net/gh/ryanoasis/nerd-fonts@v3.4.0/patched-fonts/CascadiaCode/CaskaydiaCoveNerdFont-Bold.ttf",
+     "sha256": "d38b2e9461f52c70ef9f18c5c79f869d8b084432416ea6e850855c5222fbdc38"
+    }
+   },
+   "advance": 0.586
+  },
+  "IBM Plex Mono": {
+   "package": "ibm-plex-mono",
+   "nerd": {
+    "family": "BlexMono Nerd Font",
+    "regular": {
+     "url": "https://cdn.jsdelivr.net/gh/ryanoasis/nerd-fonts@v3.4.0/patched-fonts/IBMPlexMono/Mono/BlexMonoNerdFont-Regular.ttf",
+     "sha256": "01f079efd67f8011b595dd3a46dad870098bfb8ddc381e636c9b00180c3acbf8"
+    },
+    "bold": {
+     "url": "https://cdn.jsdelivr.net/gh/ryanoasis/nerd-fonts@v3.4.0/patched-fonts/IBMPlexMono/Mono/BlexMonoNerdFont-Bold.ttf",
+     "sha256": "0d40cee43321be3915194991edf23810931f3532403b1c061913e61e9572b224"
+    }
+   },
+   "advance": 0.6
+  },
+  "Source Code Pro": {
+   "package": "source-code-pro",
+   "nerd": {
+    "family": "SauceCodePro Nerd Font",
+    "regular": {
+     "url": "https://cdn.jsdelivr.net/gh/ryanoasis/nerd-fonts@v3.4.0/patched-fonts/SourceCodePro/SauceCodeProNerdFont-Regular.ttf",
+     "sha256": "564dbe189cee4b24e06e257ed5e99e0b40c38f5aa6b93af19d747138223e98a5"
+    },
+    "bold": {
+     "url": "https://cdn.jsdelivr.net/gh/ryanoasis/nerd-fonts@v3.4.0/patched-fonts/SourceCodePro/SauceCodeProNerdFont-Bold.ttf",
+     "sha256": "10d7a62907a342e7843a0542637a34b130dae659c3e441cb84fbfb9a25ae3639"
+    }
+   },
+   "advance": 0.6
+  }
+ }
+}

@@ -62,8 +62,9 @@ test('unknown scene and top-level keys fail clearly', () => {
   assert.throws(() => build('scenes:\n  - steps: [{command: ls}]\n    nope: 1\n'), /unknown key "nope"/);
 });
 
-test('powerline prompt is a clear stub until fonts land', () => {
-  assert.throws(() => build('style: { prompt: powerline }\nsteps:\n  - command: ls\n'), /powerline.*Nerd Font/);
+test('powerline prompt builds segments (needs the Nerd Font glyphs)', () => {
+  const b = build('style: { prompt: powerline }\nsteps:\n  - command: ls\n');
+  assert.ok(b.castText.includes('\ue0b0'));
 });
 
 test('prompt presets and template fields', () => {

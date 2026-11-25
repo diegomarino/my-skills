@@ -18,7 +18,10 @@ Usage
   cli-motion still  <scene.yaml> [--at <ms|end>] [-o out.svg]   one frame as SVG
   cli-motion themes [--json]                                    list the 25 themes
   cli-motion doctor [--install]                                 check Node, ffmpeg, cache
-  cli-motion export | preview | fonts                           arrive in later releases
+  cli-motion fonts [--json]                                     list fonts, sizes, Nerd Font cache
+  cli-motion preview [--fonts a,b|all] [--sizes 12,14] [--themes a,b|all] [--out sheet.png|sheet.html]
+                                                                contact sheet: font × size × theme
+  cli-motion export                                             arrives in a later release
 
 Options
   -o, --out <file>   output path (default: next to the scene)
@@ -42,6 +45,9 @@ function parseArgs(argv) {
       const n = argv[i + 1];
       args.flags.cast = n && !n.startsWith('-') && args._.length > 0 && !/\.ya?ml$/i.test(n) ? argv[++i] : true;
     } else if (a.startsWith('--cast=')) args.flags.cast = a.slice(7);
+    else if (a === '--fonts') args.flags.fonts = next();
+    else if (a === '--sizes') args.flags.sizes = next();
+    else if (a === '--themes') args.flags.themes = next();
     else if (a === '--json') args.flags.json = true;
     else if (a === '--install') args.flags.install = true;
     else if (a === '-h' || a === '--help') args.flags.help = true;
@@ -73,7 +79,7 @@ async function cmdRender(args, still) {
   const svgLib = await import('./lib/svg/index.mjs');
   const dir = dirname(build.file);
   const out = resolve(args.flags.out ?? join(dir, `${sceneBase(sceneFile)}${still ? '.still' : ''}.svg`));
-  const svg = still ? svgLib.renderStill(build, args.flags.at ?? 'end') : svgLib.renderAnimated(build);
+  const svg = still ? await svgLib.renderStill(build, args.flags.at ?? 'end') : await svgLib.renderAnimated(build);
   writeOut(out, svg);
   if (args.flags.cast) {
     const castPath = typeof args.flags.cast === 'string' ? resolve(args.flags.cast) : out.replace(/\.svg$/, '') + '.cast';
@@ -93,6 +99,42 @@ async function cmdThemes(args) {
   }
   const width = Math.max(...themes.map((t) => t.id.length));
   for (const t of themes) console.log(`${t.id.padEnd(width)}  ${t.appearance.padEnd(5)}  ${t.name}`);
+}
+
+async function cmdFonts(args) {
+  ensureDeps({ log: (m) => console.error(`cli-motion: ${m}`) });
+  const { listFonts, nerdCacheDir } = await import('./lib/fonts/index.mjs');
+  const fonts = listFonts();
+  if (args.flags.json) {
+    console.log(JSON.stringify(fonts, null, 2));
+    return;
+  }
+  const width = Math.max(...fonts.map((f) => f.name.length));
+  for (const f of fonts) {
+    console.log(`${f.name.padEnd(width)}${f.name === 'JetBrains Mono' ? '  (default)' : '           '}  ${f.package}  nerd: ${f.nerd} [${f.nerdCached ? 'cached' : 'downloads on first use'}]`);
+  }
+  console.log(`\nfont_size: any number of px (default 14). Nerd Fonts cache: ${nerdCacheDir()}`);
+}
+
+async function cmdPreview(args) {
+  ensureDeps({ log: (m) => console.error(`cli-motion: ${m}`) });
+  const { PREVIEW_DEFAULTS, buildCells, parseList, sheetHtml, sheetPng } = await import('./lib/preview/index.mjs');
+  const { FONT_NAMES, fontInfo } = await import('./lib/fonts/index.mjs');
+  const { listThemes, loadTheme } = await import('./lib/config/index.mjs');
+  const fonts = parseList(args.flags.fonts, FONT_NAMES, 'fonts') ?? PREVIEW_DEFAULTS.fonts;
+  const sizes = (parseList(args.flags.sizes, [], 'sizes') ?? PREVIEW_DEFAULTS.sizes).map((v) => {
+    if (!(Number(v) > 0)) throw new UsageError(`--sizes: "${v}" is not a size in px`);
+    return Number(v);
+  });
+  const themes = parseList(args.flags.themes, listThemes().map((t) => t.id), 'themes') ?? PREVIEW_DEFAULTS.themes;
+  fonts.forEach((f) => fontInfo(f));
+  themes.forEach((t) => loadTheme(t));
+  const out = resolve(args.flags.out ?? 'cli-motion-preview.png');
+  const cells = await buildCells({ fonts, sizes, themes });
+  if (/\.html?$/i.test(out)) writeOut(out, sheetHtml(cells));
+  else if (/\.png$/i.test(out)) writeOut(out, await sheetPng(cells, { cols: Math.min(themes.length, 3) }));
+  else throw new UsageError(`--out must end in .png or .html, got "${out}"`);
+  console.log(`${out} (${cells.length} cells: ${fonts.length} fonts × ${sizes.length} sizes × ${themes.length} themes)`);
 }
 
 function cmdDoctor(args) {
@@ -144,10 +186,10 @@ async function main() {
     case 'still': return cmdRender(args, true);
     case 'themes': return cmdThemes(args);
     case 'doctor': return cmdDoctor(args);
+    case 'fonts': return cmdFonts(args);
+    case 'preview': return cmdPreview(args);
     case 'export':
-    case 'preview':
-    case 'fonts':
-      throw new UsageError(`\`${command}\` is implemented in a later release of cli-motion`);
+      throw new UsageError('`export` is implemented in a later release of cli-motion');
     default:
       throw new UsageError(`unknown command "${command}"\n\n${USAGE}`);
   }

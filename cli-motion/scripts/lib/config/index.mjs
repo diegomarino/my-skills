@@ -23,6 +23,7 @@ const ENUMS = {
   window: ['chrome', 'plain', 'none'],
   cursor: ['hidden', 'block', 'bar', 'underline'],
   playback: ['loop', 'once'],
+  font_nerd: ['auto', true, false],
   transition: ['cut', 'clear', 'fade'],
 };
 

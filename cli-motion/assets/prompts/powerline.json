@@ -1,1 +1,12 @@
-{ "name": "powerline", "template": null, "requires": "fonts", "description": "oh-my-posh style segments. Needs a Nerd Font; arrives with the fonts task." }
+{
+  "name": "powerline",
+  "template": null,
+  "requires": "nerd-font",
+  "segments": [
+    { "text": " {cwd} ", "fg": "background", "bg": "blue" },
+    { "text": "  {branch} ", "fg": "background", "bg": "magenta" },
+    { "text": " {status} ", "fg": "background", "bg": "green" }
+  ],
+  "separator": "",
+  "description": "oh-my-posh style segments (path, git branch, status) joined by powerline arrows. Needs a Nerd Font; cli-motion downloads one into the cache the first time a scene uses it."
+}

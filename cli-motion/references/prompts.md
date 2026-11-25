@@ -9,7 +9,7 @@
 | `path` | `~/app ❯ ` | uses `prompt_cwd` |
 | `git` | `~/app on main ❯ ` | `prompt_cwd`, `prompt_branch` |
 | `template` | anything | `prompt_template` with `{cwd} {branch} {user} {host} {time} {status}` |
-| `powerline` | oh-my-posh style segments | needs a Nerd Font; fails with a clear error until the fonts task lands |
+| `powerline` | oh-my-posh style segments: path, git branch, status, joined by arrows | needs the Nerd Font variant; fetched once into the cache, automatically (see [fonts](fonts.md)) |
 
 ```yaml
 style:
