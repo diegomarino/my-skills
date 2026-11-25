@@ -188,16 +188,18 @@ async function exportGif(build, prep, opts, raster, outFile, tmp, encoder, log) 
       names.set(hash, name);
     }
     // uniform 1 s per frame here: ffmpeg only chooses the palette and maps pixels (see patchGifDelays)
+    // passthrough, not cfr: cfr would repeat every 1 s frame to fill the output frame rate, and
+    // the surplus copies would then be cut off along with the real frames
     const lines = merged.map((m) => `file '${names.get(m.px.hash)}'\nduration 1`);
     lines.push(`file '${names.get(merged.at(-1).px.hash)}'`);
     writeFileSync(join(dir, 'list.txt'), `${lines.join('\n')}\n`);
     const dither = opts.dither === 'bayer' ? 'dither=bayer:bayer_scale=3' : 'dither=none';
     const graph = `[0:v]split[a][b];[a]palettegen=stats_mode=full:max_colors=256[p];[b][p]paletteuse=${dither}:diff_mode=rectangle`;
     const raw = join(dir, 'raw.gif');
-    const args = ['-f', 'concat', '-safe', '0', '-i', join(dir, 'list.txt'), '-filter_complex', graph, '-loop', once ? '-1' : '0', '-frames:v', String(merged.length)];
+    const args = ['-f', 'concat', '-safe', '0', '-i', join(dir, 'list.txt'), '-filter_complex', graph, '-loop', once ? '-1' : '0'];
     // `-fps_mode` replaced `-vsync` in ffmpeg 5.1: try the new flag, fall back for older builds
-    let res = runFfmpeg([...args, '-fps_mode', 'cfr', raw]);
-    if (!res.ok && /Unrecognized option 'fps_mode'/.test(res.detail)) res = runFfmpeg([...args, '-vsync', 'cfr', raw]);
+    let res = runFfmpeg([...args, '-fps_mode', 'passthrough', raw]);
+    if (!res.ok && /Unrecognized option 'fps_mode'/.test(res.detail)) res = runFfmpeg([...args, '-vsync', 'passthrough', raw]);
     if (!res.ok) throw new RenderError(`ffmpeg failed while writing the GIF:\n${res.detail}`);
     writeFileSync(outFile, patchGifDelays(readFileSync(raw), merged.map((m) => m.units)));
     return { frames: merged.length, unique: unique.size, seconds: merged.reduce((s, m) => s + m.units, 0) / 100, encoder: 'ffmpeg' };

@@ -165,3 +165,74 @@ test('invalid options fail with a clear message', () => {
   assert.throws(() => raster.exportOptions(style, { scale: '4' }), /--scale must be 1, 2 or 3/);
   assert.throws(() => raster.exportOptions({ ...style, gif_dither: 'floyd_steinberg' }), /error-diffusion/);
 });
+
+// ── the exported files really contain the animation ────────────────────────────────────────
+
+const MOVING = `
+name: demo
+style: { width: 30, final_hold: 1s, typing_jitter: 0, typing_delay: 0.1, progress_bar: false, spinner: line }
+steps:
+  - command: "echo hello world"
+  - output: "line one"
+  - output: "line two"
+`;
+
+/** Decode every frame of a video/GIF to raw rgb24 (no resampling). */
+function decodeFrames(file, w, h) {
+  const res = spawnSync('ffmpeg', ['-v', 'error', '-i', file, '-fps_mode', 'passthrough', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-'], { maxBuffer: 1 << 30 });
+  assert.equal(res.status, 0, String(res.stderr));
+  const size = w * h * 3;
+  return Array.from({ length: res.stdout.length / size }, (_, i) => res.stdout.subarray(i * size, (i + 1) * size));
+}
+
+/** How many times the screen content changes in the SVG pipeline (consecutive distinct states). */
+async function svgContentSteps(b) {
+  const prep = await raster.prepareExport(b);
+  const r = raster.makeRasteriser(prep.faces, 1);
+  try {
+    const hashes = prep.states.map((_, i) => r.render(prep.frameSvg({ state: i, base: null, alpha: null, progress: null })).rgba.toString('base64'));
+    return hashes.filter((h, i) => i === 0 || h !== hashes[i - 1]).length;
+  } finally { r.close(); }
+}
+
+const { createHash } = await import('node:crypto');
+const sha = (buf) => createHash('sha1').update(buf).digest('hex');
+
+for (const encoder of ['js', 'ffmpeg']) {
+  test(`GIF (${encoder}) has as many distinct content frames as the SVG has distinct states`, { skip: !ffmpegInfo().ffmpeg }, async () => {
+    const b = build(MOVING);
+    const expected = await svgContentSteps(b);
+    assert.ok(expected > 15, `scene should have many states, has ${expected}`);
+    const [gif] = await raster.exportScene(b, { gif: true, mp4: false, outDir: outDir(), base: 'm', encoder, flags: { scale: 1 } });
+    const info = readGif(readFileSync(gif.file));
+    const frames = decodeFrames(gif.file, info.width, info.height);
+    const distinct = new Set(frames.map(sha)).size;
+    assert.equal(frames.length, info.delays.length);
+    assert.equal(distinct, expected, `gif shows ${distinct} distinct images, the SVG has ${expected}`);
+  });
+}
+
+test('GIF with the progress bar: every content change is still there (bar steps only add frames)', { skip: !ffmpegInfo().ffmpeg }, async () => {
+  const b = build(MOVING.replace('progress_bar: false', 'progress_bar: true'));
+  const expected = await svgContentSteps(b);
+  const [gif] = await raster.exportScene(b, { gif: true, mp4: false, outDir: outDir(), base: 'm', encoder: 'ffmpeg', flags: { scale: 1 } });
+  const info = readGif(readFileSync(gif.file));
+  const distinct = new Set(decodeFrames(gif.file, info.width, info.height).map(sha)).size;
+  assert.ok(distinct >= expected, `gif shows ${distinct} distinct images, expected at least ${expected}`);
+});
+
+test('MP4 content changes as often as the SVG states do (codec noise ignored)', { skip: !(ffmpegInfo().ffmpeg && ffmpegInfo().libx264) }, async () => {
+  const b = build(MOVING);
+  const expected = await svgContentSteps(b);
+  const [mp4] = await raster.exportScene(b, { gif: false, mp4: true, outDir: outDir(), base: 'm', flags: { scale: 1, fps: 30 } });
+  const probe = JSON.parse(spawnSync('ffprobe', ['-v', 'error', '-show_entries', 'stream=width,height', '-of', 'json', mp4.file], { encoding: 'utf8' }).stdout).streams[0];
+  const frames = decodeFrames(mp4.file, probe.width, probe.height);
+  // a content change moves thousands of bytes; compression noise moves a handful
+  let changes = 1;
+  for (let i = 1; i < frames.length; i++) {
+    let big = 0;
+    for (let k = 0; k < frames[i].length; k += 3) if (Math.abs(frames[i][k] - frames[i - 1][k]) > 40) big++;
+    if (big > 20) changes++;
+  }
+  assert.ok(changes >= expected * 0.9 && changes <= expected + 2, `mp4 changes content ${changes} times, the SVG has ${expected} states`);
+});

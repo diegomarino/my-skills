@@ -82,10 +82,13 @@ export function patchGifDelays(buf, delaysCs) {
   if (out[10] & 0x80) p += 3 * (1 << ((out[10] & 7) + 1));
   const skipSub = () => { while (out[p] !== 0) p += out[p] + 1; p++; };
   let frame = 0;
+  let surplus = -1;
   while (p < out.length && out[p] !== 0x3b) {
     if (out[p] === 0x21) {
       if (out[p + 1] === 0xf9) {
-        if (frame >= delaysCs.length) throw new Error('GIF has more frames than delays');
+        // the concat demuxer's repeated last entry can add one surplus frame: cut that one off
+        if (frame === delaysCs.length) { surplus = p; frame++; p += 2; skipSub(); continue; }
+        if (frame > delaysCs.length) throw new Error('GIF has more frames than delays');
         out.writeUInt16LE(delaysCs[frame++], p + 4);
       }
       p += 2;
@@ -98,6 +101,7 @@ export function patchGifDelays(buf, delaysCs) {
       skipSub();
     } else throw new Error('unexpected GIF block');
   }
+  if (frame === delaysCs.length + 1 && surplus >= 0) return Buffer.concat([out.subarray(0, surplus), Buffer.from([0x3b])]);
   if (frame !== delaysCs.length) throw new Error(`GIF has ${frame} frames but ${delaysCs.length} delays`);
   return out;
 }
