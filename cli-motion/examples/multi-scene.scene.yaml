@@ -1,0 +1,28 @@
+# Three scenes with different transitions: a banner, a typed install, a fade to real output.
+name: cli-motion multi-scene demo
+style:
+  theme: tokyonight-night
+  prompt: path
+  prompt_cwd: "~/app"
+  width: 80
+  cursor: block
+  cursor_blink: true
+  final_hold: 4s
+scenes:
+  - title: { banner: "cli-motion", font: standard, subtitle: "scene in, animation out" }
+    hold: 2s
+  - transition: clear
+    steps:
+      - comment: "# install nothing, render everything"
+      - command: "npx skills add diegomarino/my-skills@cli-motion"
+      - spinner: { text: "installing", preset: arc, for: 1.2s, done: "[ok]✓[/] installed [strong]cli-motion[/]" }
+      - command: "cli-motion render demo.scene.yaml"
+      - spinner: { preset: bar, for: 1.4s }
+      - output: "[ok]✓[/] wrote [accent]demo.svg[/]"
+  - transition: fade
+    style: { prompt: git, cursor: bar }
+    steps:
+      - run: "node -e \"console.log('\\x1b[1mreal output\\x1b[0m, captured with \\x1b[32mits colours\\x1b[0m')\""
+        show: "my-cli --version"
+        hold: 2s
+      - comment: "# a real command ran above; its ANSI output was kept"

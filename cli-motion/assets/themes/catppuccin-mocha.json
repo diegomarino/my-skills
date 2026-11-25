@@ -1,0 +1,45 @@
+{
+  "id": "catppuccin-mocha",
+  "name": "Catppuccin Mocha",
+  "appearance": "dark",
+  "license": "MIT (catppuccin/palette, catppuccin/kitty)",
+  "sources": {
+    "palette": "https://github.com/catppuccin/palette/blob/main/palette.json",
+    "terminal": "https://github.com/catppuccin/kitty/blob/main/themes/mocha.conf",
+    "style_guide": "https://github.com/catppuccin/catppuccin/blob/main/docs/style-guide.md"
+  },
+  "terminal": {
+    "background": "#1e1e2e",
+    "foreground": "#cdd6f4",
+    "cursor": "#f5e0dc",
+    "cursor_text": "#1e1e2e",
+    "selection_background": "#f5e0dc",
+    "selection_foreground": "#1e1e2e",
+    "ansi": [
+      "#45475a",
+      "#f38ba8",
+      "#a6e3a1",
+      "#f9e2af",
+      "#89b4fa",
+      "#f5c2e7",
+      "#94e2d5",
+      "#bac2de",
+      "#585b70",
+      "#f38ba8",
+      "#a6e3a1",
+      "#f9e2af",
+      "#89b4fa",
+      "#f5c2e7",
+      "#94e2d5",
+      "#a6adc8"
+    ]
+  },
+  "accents": {
+    "accent": "#89b4fa",
+    "accent2": "#cba6f7",
+    "success": "#a6e3a1",
+    "warning": "#f9e2af",
+    "error": "#f38ba8",
+    "info": "#94e2d5"
+  }
+}

@@ -1,0 +1,15 @@
+# A short single-scene demo: type a command, watch a spinner, read the result.
+style:
+  theme: catppuccin-mocha
+  prompt: git
+  width: 72
+  speed: 1.2
+steps:
+  - comment: "# render a terminal animation in one command"
+  - command: "cli-motion render demo.scene.yaml"
+  - spinner: { text: "rendering", for: 1.5s, done: "[ok]✓[/] wrote [accent]demo.svg[/] in [strong]0.8s[/]" }
+  - output: |
+      [muted]  12 scenes · 640 events · 31 KB[/]
+      [warn]!  progress bar is on; pass style.progress_bar: false to drop it[/]
+  - pause: 1s
+  - prompt: true

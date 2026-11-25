@@ -1,0 +1,45 @@
+{
+  "id": "catppuccin-frappe",
+  "name": "Catppuccin Frappé",
+  "appearance": "dark",
+  "license": "MIT (catppuccin/palette, catppuccin/kitty)",
+  "sources": {
+    "palette": "https://github.com/catppuccin/palette/blob/main/palette.json",
+    "terminal": "https://github.com/catppuccin/kitty/blob/main/themes/frappe.conf",
+    "style_guide": "https://github.com/catppuccin/catppuccin/blob/main/docs/style-guide.md"
+  },
+  "terminal": {
+    "background": "#303446",
+    "foreground": "#c6d0f5",
+    "cursor": "#f2d5cf",
+    "cursor_text": "#303446",
+    "selection_background": "#f2d5cf",
+    "selection_foreground": "#303446",
+    "ansi": [
+      "#51576d",
+      "#e78284",
+      "#a6d189",
+      "#e5c890",
+      "#8caaee",
+      "#f4b8e4",
+      "#81c8be",
+      "#b5bfe2",
+      "#626880",
+      "#e78284",
+      "#a6d189",
+      "#e5c890",
+      "#8caaee",
+      "#f4b8e4",
+      "#81c8be",
+      "#a5adce"
+    ]
+  },
+  "accents": {
+    "accent": "#8caaee",
+    "accent2": "#ca9ee6",
+    "success": "#a6d189",
+    "warning": "#e5c890",
+    "error": "#e78284",
+    "info": "#81c8be"
+  }
+}

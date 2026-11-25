@@ -1,0 +1,45 @@
+{
+  "id": "rose-pine-main",
+  "name": "Rosé Pine",
+  "appearance": "dark",
+  "license": "MIT",
+  "sources": {
+    "palette": "https://github.com/rose-pine/palette/blob/main/source/index.ts",
+    "terminal": "https://github.com/rose-pine/kitty/blob/main/dist/rose-pine.conf",
+    "style_guide": "https://github.com/rose-pine/palette#roles"
+  },
+  "terminal": {
+    "background": "#191724",
+    "foreground": "#e0def4",
+    "cursor": "#524f67",
+    "cursor_text": "#e0def4",
+    "selection_background": "#403d52",
+    "selection_foreground": "#e0def4",
+    "ansi": [
+      "#26233a",
+      "#eb6f92",
+      "#31748f",
+      "#f6c177",
+      "#9ccfd8",
+      "#c4a7e7",
+      "#ebbcba",
+      "#e0def4",
+      "#6e6a86",
+      "#eb6f92",
+      "#31748f",
+      "#f6c177",
+      "#9ccfd8",
+      "#c4a7e7",
+      "#ebbcba",
+      "#e0def4"
+    ]
+  },
+  "accents": {
+    "accent": "#c4a7e7",
+    "accent2": "#31748f",
+    "success": "#31748f",
+    "warning": "#f6c177",
+    "error": "#eb6f92",
+    "info": "#9ccfd8"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "dots":   { "frames": ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"], "interval": 0.08 },
+  "line":   { "frames": ["-", "\\", "|", "/"], "interval": 0.1 },
+  "arc":    { "frames": ["◜", "◠", "◝", "◞", "◡", "◟"], "interval": 0.1 },
+  "bounce": { "frames": ["⠁", "⠂", "⠄", "⡀", "⢀", "⠠", "⠐", "⠈"], "interval": 0.1 },
+  "bar":    { "kind": "progress", "width": 20, "fill": "█", "empty": "░", "interval": 0.06 }
+}

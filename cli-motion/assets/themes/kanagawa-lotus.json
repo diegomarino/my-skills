@@ -1,0 +1,45 @@
+{
+  "id": "kanagawa-lotus",
+  "name": "Kanagawa Lotus",
+  "appearance": "light",
+  "license": "MIT",
+  "sources": {
+    "palette": "https://github.com/rebelot/kanagawa.nvim/blob/master/lua/kanagawa/colors.lua",
+    "terminal": "https://github.com/rebelot/kanagawa.nvim/blob/master/extras/kitty/kanagawa_light.conf",
+    "style_guide": "https://github.com/rebelot/kanagawa.nvim/blob/master/lua/kanagawa/themes.lua"
+  },
+  "terminal": {
+    "background": "#f2ecbc",
+    "foreground": "#545464",
+    "cursor": "#43436c",
+    "cursor_text": "#f2ecbc",
+    "selection_background": "#c9cbd1",
+    "selection_foreground": "#43436c",
+    "ansi": [
+      "#1f1f28",
+      "#c84053",
+      "#6f894e",
+      "#77713f",
+      "#4d699b",
+      "#b35b79",
+      "#597b75",
+      "#545464",
+      "#8a8980",
+      "#d7474b",
+      "#6e915f",
+      "#836f4a",
+      "#6693bf",
+      "#624c83",
+      "#5e857a",
+      "#43436c"
+    ]
+  },
+  "accents": {
+    "accent": "#4d699b",
+    "accent2": "#624c83",
+    "success": "#6f894e",
+    "warning": "#e98a00",
+    "error": "#e82424",
+    "info": "#5a7785"
+  }
+}

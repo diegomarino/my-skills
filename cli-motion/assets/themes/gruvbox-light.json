@@ -1,0 +1,45 @@
+{
+  "id": "gruvbox-light",
+  "name": "Gruvbox Light",
+  "appearance": "light",
+  "license": "MIT (package.json \"license\" field of morhetz/gruvbox; no LICENSE file in repo root; gruvbox-contrib has no LICENSE file either)",
+  "sources": {
+    "palette": "https://github.com/morhetz/gruvbox/blob/master/colors/gruvbox.vim",
+    "terminal": "https://github.com/morhetz/gruvbox-contrib/blob/master/xresources/gruvbox-light.xresources",
+    "style_guide": null
+  },
+  "terminal": {
+    "background": "#fbf1c7",
+    "foreground": "#3c3836",
+    "cursor": null,
+    "cursor_text": null,
+    "selection_background": null,
+    "selection_foreground": null,
+    "ansi": [
+      "#fdf4c1",
+      "#cc241d",
+      "#98971a",
+      "#d79921",
+      "#458588",
+      "#b16286",
+      "#689d6a",
+      "#7c6f64",
+      "#928374",
+      "#9d0006",
+      "#79740e",
+      "#b57614",
+      "#076678",
+      "#8f3f71",
+      "#427b58",
+      "#3c3836"
+    ]
+  },
+  "accents": {
+    "accent": "#076678",
+    "accent2": "#8f3f71",
+    "success": "#79740e",
+    "warning": "#af3a03",
+    "error": "#9d0006",
+    "info": "#427b58"
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "id": "rose-pine-moon",
+  "name": "Rosé Pine Moon",
+  "appearance": "dark",
+  "license": "MIT",
+  "sources": {
+    "palette": "https://github.com/rose-pine/palette/blob/main/source/index.ts",
+    "terminal": "https://github.com/rose-pine/kitty/blob/main/dist/rose-pine-moon.conf",
+    "style_guide": "https://github.com/rose-pine/palette#roles"
+  },
+  "terminal": {
+    "background": "#232136",
+    "foreground": "#e0def4",
+    "cursor": "#56526e",
+    "cursor_text": "#e0def4",
+    "selection_background": "#44415a",
+    "selection_foreground": "#e0def4",
+    "ansi": [
+      "#393552",
+      "#eb6f92",
+      "#3e8fb0",
+      "#f6c177",
+      "#9ccfd8",
+      "#c4a7e7",
+      "#ea9a97",
+      "#e0def4",
+      "#6e6a86",
+      "#eb6f92",
+      "#3e8fb0",
+      "#f6c177",
+      "#9ccfd8",
+      "#c4a7e7",
+      "#ea9a97",
+      "#e0def4"
+    ]
+  },
+  "accents": {
+    "accent": "#c4a7e7",
+    "accent2": "#3e8fb0",
+    "success": "#3e8fb0",
+    "warning": "#f6c177",
+    "error": "#eb6f92",
+    "info": "#9ccfd8"
+  }
+}

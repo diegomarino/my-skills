@@ -1,0 +1,45 @@
+{
+  "id": "everforest-dark",
+  "name": "Everforest Dark",
+  "appearance": "dark",
+  "license": "MIT",
+  "sources": {
+    "palette": "https://github.com/sainnhe/everforest/blob/master/autoload/everforest.vim",
+    "terminal": "https://github.com/sainnhe/everforest/blob/master/colors/everforest.vim",
+    "style_guide": "https://github.com/sainnhe/everforest/blob/master/palette.md#highlights"
+  },
+  "terminal": {
+    "background": "#2d353b",
+    "foreground": "#d3c6aa",
+    "cursor": null,
+    "cursor_text": null,
+    "selection_background": null,
+    "selection_foreground": null,
+    "ansi": [
+      "#475258",
+      "#e67e80",
+      "#a7c080",
+      "#dbbc7f",
+      "#7fbbb3",
+      "#d699b6",
+      "#83c092",
+      "#d3c6aa",
+      "#475258",
+      "#e67e80",
+      "#a7c080",
+      "#dbbc7f",
+      "#7fbbb3",
+      "#d699b6",
+      "#83c092",
+      "#d3c6aa"
+    ]
+  },
+  "accents": {
+    "accent": "#a7c080",
+    "accent2": "#d699b6",
+    "success": "#a7c080",
+    "warning": "#dbbc7f",
+    "error": "#e67e80",
+    "info": "#7fbbb3"
+  }
+}

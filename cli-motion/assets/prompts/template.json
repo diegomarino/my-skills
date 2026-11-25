@@ -1,0 +1,1 @@
+{ "name": "template", "template": null, "description": "Uses the `prompt_template` option. Fields: {cwd} {branch} {user} {host} {time} {status}." }

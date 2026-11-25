@@ -1,0 +1,92 @@
+# cli-motion defaults: the single source of truth for every option.
+#
+# Layers, lowest to highest:
+#   1. this file
+#   2. cli-motion.yaml in the project (found upward from the scene file)
+#   3. the scene's `style:` block
+#   4. a scene's own `style:` block, then per-step options
+# Unknown keys fail with an error that names the key and lists the valid ones.
+# Durations accept 1.5s, 800ms or a bare number of seconds.
+# Options marked "implemented in a later task" are accepted and validated now
+# but have no effect yet.
+
+# ── look ────────────────────────────────────────────────────────────────────
+theme: catppuccin-mocha        # any id from `cli-motion themes` (25 tui-design themes)
+theme_light: null              # implemented in a later task: light twin for a <picture> dark/light pair
+font: JetBrains Mono           # implemented in a later task: Fira Code, Cascadia Code, IBM Plex Mono, Source Code Pro
+font_size: 14                  # implemented in a later task
+window: chrome                 # chrome (title bar + three dots) | plain (no title bar) | none (bare terminal)
+window_shadow: true            # implemented in a later task
+window_radius: 8               # implemented in a later task (px)
+window_background: null        # implemented in a later task: outer colour for GIF/MP4
+padding: 18                    # px between the terminal text and the image edge
+width: 80                      # terminal columns
+height: auto                   # terminal rows, or auto (fits the tallest screen so nothing scrolls off)
+
+# ── prompt ──────────────────────────────────────────────────────────────────
+prompt: simple                 # simple (❯) | dollar ($) | path (~/app ❯) | git (~/app on main ❯) | template | powerline (needs fonts: later task)
+prompt_template: "[cwd]{cwd}[/] [prompt]❯[/] "   # used by `prompt: template`; fields {cwd} {branch} {user} {host} {time} {status}
+prompt_cwd: "~/app"
+prompt_branch: main
+prompt_user: dev
+prompt_host: laptop
+prompt_time: "12:00"           # fixed so output stays byte-identical between runs
+prompt_status: "✔"
+
+# ── cursor ──────────────────────────────────────────────────────────────────
+cursor: hidden                 # hidden | block | bar | underline
+cursor_blink: false            # blink while idle (530 ms)
+
+# ── text styles ─────────────────────────────────────────────────────────────
+# A style is space-separated tokens: bold dim italic underline fg:<colour> bg:<colour>
+# <colour> = black red green yellow blue magenta cyan white (+ bright- prefix),
+#            #rrggbb, or a theme colour: foreground background accent accent2 success warning error info
+typed_style: "bold fg:foreground"   # what the operator types (bold, brightest theme colour)
+output_style: ""               # normal weight, theme foreground
+comment_style: "fg:bright-black"
+# Named styles for [name]…[/] markup in output text and prompt templates.
+# Add your own here or in the scene's `style.styles`.
+styles:
+  accent: "fg:accent"
+  strong: "bold"
+  muted: "fg:bright-black"
+  warn: "fg:yellow"
+  error: "fg:red"
+  ok: "fg:green"
+  prompt: "bold fg:green"
+  cwd: "fg:blue"
+  branch: "fg:magenta"
+  continuation: "fg:bright-black"
+
+# ── timing ──────────────────────────────────────────────────────────────────
+speed: 1                       # global multiplier (2 = twice as fast); per step: `speed:`
+typing_delay: 0.045            # seconds per typed character
+typing_jitter: 0.03            # extra random seconds per character (seeded)
+enter_delay: 0.12              # pause between the last typed character and Enter
+prompt_delay: 0.4              # pause before a new prompt appears
+line_delay: 0.05               # pause between lines of an output block
+scene_hold: 1s                 # pause at the end of every scene except the last
+seed: 42                       # seeds the typing jitter: same scene + same seed = identical bytes
+
+# ── spinners and banners ────────────────────────────────────────────────────
+spinner: dots                  # dots | line | arc | bounce | bar (see assets/spinners.json)
+spinner_style: accent
+banner_font: standard          # any figlet font
+banner_style: accent
+banner_gradient: null          # implemented in a later task: cfonts gradients
+
+# ── playback ────────────────────────────────────────────────────────────────
+playback: loop                 # loop | once (once plays through and holds the last frame)
+final_hold: 3s                 # how long the last frame stays before the loop restarts
+transition: cut                # between scenes: cut | clear | fade
+transition_duration: 0.4s      # length of a fade
+progress_bar: true
+progress_color: null           # null = theme accent
+progress_track: null           # null = derived from the theme background
+progress_height: 4             # px
+
+# ── raster export ───────────────────────────────────────────────────────────
+scale: 2                       # implemented in a later task: GIF/MP4 pixel scale (1, 2, 3)
+mp4_fps: 30                    # implemented in a later task
+gif_fps: 15                    # implemented in a later task
+gif_dither: false              # implemented in a later task: single global palette, no error diffusion

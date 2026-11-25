@@ -1,0 +1,45 @@
+{
+  "id": "solarized-dark",
+  "name": "Solarized Dark",
+  "appearance": "dark",
+  "license": "MIT (solarized/xresources LICENSE; altercation/solarized \"Copyright (c) 2011 Ethan Schoonover\", MIT)",
+  "sources": {
+    "palette": "https://github.com/altercation/solarized/blob/master/README.md#the-values",
+    "terminal": "https://github.com/solarized/xresources/blob/master/Xresources.dark",
+    "style_guide": "https://github.com/altercation/solarized/blob/master/README.md#usage--development"
+  },
+  "terminal": {
+    "background": "#002b36",
+    "foreground": "#839496",
+    "cursor": "#93a1a1",
+    "cursor_text": null,
+    "selection_background": null,
+    "selection_foreground": null,
+    "ansi": [
+      "#073642",
+      "#dc322f",
+      "#859900",
+      "#b58900",
+      "#268bd2",
+      "#d33682",
+      "#2aa198",
+      "#eee8d5",
+      "#002b36",
+      "#cb4b16",
+      "#586e75",
+      "#657b83",
+      "#839496",
+      "#6c71c4",
+      "#93a1a1",
+      "#fdf6e3"
+    ]
+  },
+  "accents": {
+    "accent": "#268bd2",
+    "accent2": "#6c71c4",
+    "success": "#859900",
+    "warning": "#b58900",
+    "error": "#dc322f",
+    "info": "#2aa198"
+  }
+}

@@ -1,0 +1,1 @@
+{ "name": "git", "template": "[cwd]{cwd}[/] [muted]on[/] [branch]{branch}[/] [prompt]❯[/] ", "description": "Working directory, git branch, then ❯." }

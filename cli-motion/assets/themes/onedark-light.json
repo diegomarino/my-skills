@@ -1,0 +1,45 @@
+{
+  "id": "onedark-light",
+  "name": "One Light",
+  "appearance": "light",
+  "license": "MIT",
+  "sources": {
+    "palette": "https://github.com/atom/one-light-syntax/blob/master/styles/colors.less",
+    "terminal": null,
+    "style_guide": "https://github.com/atom/one-light-syntax/blob/master/styles/syntax-variables.less"
+  },
+  "terminal": {
+    "background": "#fafafa",
+    "foreground": "#383a42",
+    "cursor": "#526fff",
+    "cursor_text": null,
+    "selection_background": "#e5e5e6",
+    "selection_foreground": null,
+    "ansi": [
+      "#383a42",
+      "#e45649",
+      "#50a14f",
+      "#c18401",
+      "#4078f2",
+      "#a626a4",
+      "#0184bc",
+      "#a0a1a7",
+      "#696c77",
+      "#ca1243",
+      "#50a14f",
+      "#986801",
+      "#526fff",
+      "#a626a4",
+      "#0184bc",
+      "#e5e5e6"
+    ]
+  },
+  "accents": {
+    "accent": "#526fff",
+    "accent2": "#a626a4",
+    "success": "#50a14f",
+    "warning": "#986801",
+    "error": "#ca1243",
+    "info": "#0184bc"
+  }
+}
