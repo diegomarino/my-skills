@@ -1,10 +1,10 @@
 # cli-motion
 
-Make terminal demos from YAML for READMEs and docs: typed commands, progress and output as an animated SVG, still, GIF or MP4. No terminal recording needed.
+cli-motion is an agent skill for Claude Code, Codex, Cursor and other agents, installed with `npx skills add`. Ask your agent for a terminal demo and it writes a short YAML scene and renders an animated SVG, still, GIF or MP4 of typed commands, output, spinners and animated banners, without recording a terminal.
 
 ![a terminal demo: a typed command, a spinner and its result](examples/quick-demo.svg)
 
-You write a scene (typed commands, highlighted output, spinners, banners, transitions, optionally a real command's finished output) and cli-motion renders it with one of 25 colour themes. With the same scene and renderer the SVG is reproducible, so git diffs stay small.
+A scene (typed commands, highlighted output, spinners, banners, transitions, optionally a real command's finished output) is plain YAML that your agent writes, or you write by hand, and cli-motion renders it with one of 25 colour themes. With the same scene and renderer the SVG is reproducible, so git diffs stay small.
 
 It generalises the demo pipeline of [gh-delta](https://github.com/diegomarino/gh-delta): generate the asciicast instead of recording it, render with svg-term, then replace svg-term's moving frame reel with stationary frames so Chromium does not blur the text.
 

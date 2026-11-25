@@ -14,6 +14,7 @@ style:
   final_hold: 3s
   styles:
     amber: "bold fg:yellow"
+    muted: "fg:#737aa2"
 steps:
   - command: |-
       while true; do
