@@ -10,6 +10,8 @@
 //   - progress samples every `progressStep` seconds (MP4: 1/fps, so the bar moves smoothly;
 //     GIF: coarser, every extra step costs a frame, see references/export.md).
 
+import { fadeBoundary } from '../fades.mjs';
+
 const toMs = (s) => Math.round(s * 1000);
 
 /**
@@ -26,12 +28,18 @@ export function buildTimeline({ states, fades = [], total, fadeFps, progressStep
     return lo;
   };
 
+  // The fade starts on svg-term's own boundary (which can sit a few ms before the cast marker),
+  // fading from the state before it. Looking back from the marker instead would find the
+  // state that is already cleared.
+  const startsSec = states.map((s) => s.start);
   const fadeWindows = fades.map((f) => {
-    const start = toMs(f.at);
+    const j = fadeBoundary(startsSec, f.at);
+    if (j < 0) return null;
+    const start = bounds[j];
     const len = Math.max(1, toMs(f.duration));
     const n = Math.max(1, Math.round(f.duration * fadeFps));
-    return { start, len, n, base: Math.max(0, stateAt(start - 1)) };
-  }).filter((w) => w.start > 0 && w.start < totalMs);
+    return { start, len, n, base: j - 1 };
+  }).filter((w) => w && w.start > 0 && w.start < totalMs);
 
   const points = new Set([0, totalMs, ...bounds.filter((b) => b < totalMs)]);
   for (const w of fadeWindows) {

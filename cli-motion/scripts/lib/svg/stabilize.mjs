@@ -15,8 +15,11 @@
 //
 // Extensions over the original gh-delta stabiliser:
 // - `once`: play a single time and keep the last frame (no restart);
-// - `fades`: a short opacity ramp from the old frame to the first frame of the next
-//   scene. Both frames stay stationary; only opacity changes, and only briefly.
+// - `fades`: a short cross-fade between the old frame and the first frame of the next
+//   scene: the old frame ramps to transparent while the new one ramps in. Both stay
+//   stationary; only opacity changes, and only briefly.
+
+import { fadeBoundary } from '../fades.mjs';
 
 function keyframeBlock(svg) {
   const start = svg.indexOf('@keyframes ');
@@ -56,9 +59,9 @@ export function stabilizeSvgAnimation(svg, { once = false, fades = [], duration:
   // Which intervals start a faded-in scene, and how long the fade lasts (in %).
   const pct = (seconds) => (seconds / (castDuration ?? total)) * 100;
   const fadeAtIndex = new Map();
+  const startsSec = steps.slice(0, -1).map((s) => (s.at / 100) * total);
   for (const f of fades) {
-    const at = pct(f.at);
-    let idx = steps.findIndex((s, i) => i < steps.length - 1 && s.at >= at - 0.05);
+    const idx = fadeBoundary(startsSec, f.at);
     if (idx > 0) fadeAtIndex.set(idx, pct(f.duration));
   }
 
@@ -92,13 +95,17 @@ export function stabilizeSvgAnimation(svg, { once = false, fades = [], duration:
     rules.push(css);
 
     let anim = `animation:${name} ${duration}s step-end ${once ? '1 forwards' : 'infinite'}`;
-    const fadeLen = fadeAtIndex.get(index);
-    if (fadeLen != null) {
+    // cross-fade: this frame ramps in when it starts a faded scene, and ramps out when
+    // a faded scene follows it (both can hold for a frame between two fades)
+    const fadeInLen = fadeAtIndex.get(index);
+    const fadeOutLen = next;
+    if (fadeInLen != null || fadeOutLen != null) {
       const fname = `fade-${index}`;
-      const fadeEnd = Math.min(100, start + fadeLen);
-      rules.push(
-        `@keyframes ${fname}{0%,${num(start)}%{opacity:0}${num(fadeEnd)}%{opacity:1}100%{opacity:1}}`,
-      );
+      const stops = [[0, fadeInLen != null ? 0 : 1]];
+      if (fadeInLen != null) stops.push([start, 0], [Math.min(end, start + fadeInLen), 1]);
+      if (fadeOutLen != null) stops.push([end, 1], [Math.min(100, end + fadeOutLen), 0]);
+      stops.push([100, fadeOutLen != null ? 0 : 1]);
+      rules.push(`@keyframes ${fname}{${stops.map(([at, v]) => `${num(at)}%{opacity:${v}}`).join('')}}`);
       anim += `,${fname} ${duration}s linear ${once ? '1 forwards' : 'infinite'}`;
     }
     overlays.push(frame.replace(/^<svg(?: x="\d+")?>/, `<svg style="visibility:hidden;${anim}">`));

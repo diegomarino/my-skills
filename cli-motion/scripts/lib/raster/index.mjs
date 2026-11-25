@@ -89,7 +89,9 @@ export async function prepareExport(build, { log = () => {} } = {}) {
 
   const frameSvg = (f) => {
     const a = f.base != null ? states[f.base].markup : states[f.state].markup;
-    const markup = f.base != null ? `${a}<g opacity="${f.alpha.toFixed(4)}">${states[f.state].markup}</g>` : a;
+    const markup = f.base != null
+      ? `<g opacity="${(1 - f.alpha).toFixed(4)}">${a}</g><g opacity="${f.alpha.toFixed(4)}">${states[f.state].markup}</g>`
+      : a;
     const progress = f.progress == null ? null : (g) => progressStaticMarkup({
       x: g.margin, y: g.margin, width: g.winW, windowHeight: g.winH, fraction: f.progress, height: barHeight, fill, track,
     });
