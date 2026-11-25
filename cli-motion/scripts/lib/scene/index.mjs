@@ -382,6 +382,9 @@ function checkKeysScene(obj, allowed, where) {
  * Returns { castText, header, events, duration, fades, endMs, theme, style, projectConfig }.
  */
 export function buildCast(doc, { style, theme, baseDir = process.cwd(), file = 'scene' }) {
+  if (!(Number(style.speed) > 0) || !Number.isFinite(Number(style.speed))) {
+    throw new SceneError(`${file}: speed must be a positive number, got ${JSON.stringify(style.speed)}`);
+  }
   const cast = new Cast({
     width: Number(style.width),
     seed: Number(style.seed),
@@ -401,6 +404,9 @@ export function buildCast(doc, { style, theme, baseDir = process.cwd(), file = '
     } catch (err) {
       if (err instanceof ConfigError) throw new SceneError(err.message);
       throw err;
+    }
+    if (!(Number(sceneStyle.speed) > 0) || !Number.isFinite(Number(sceneStyle.speed))) {
+      throw new SceneError(`${where}.style: speed must be a positive number, got ${JSON.stringify(sceneStyle.speed)}`);
     }
     director.style = sceneStyle;
     director.where = where;
@@ -445,7 +451,12 @@ export function buildCast(doc, { style, theme, baseDir = process.cwd(), file = '
     events: cast.events,
     duration: cast.duration,
     fades: cast.fades,
-    endMs: Math.max(0, Math.floor(cast.duration * 1000) - 100),
+    // 100 ms before the end, but never before the last real output event (short final holds)
+    endMs: Math.max(
+      Math.ceil((cast.events.at(-2)?.[0] ?? 0) * 1000),
+      Math.floor(cast.duration * 1000) - 100,
+      0,
+    ),
     rows: height,
     theme,
     style,

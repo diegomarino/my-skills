@@ -38,8 +38,11 @@ function parseArgs(argv) {
     if (a === '-o' || a === '--out') args.flags.out = next();
     else if (a === '--at') args.flags.at = next();
     else if (a === '--cast') {
-      args.flags.cast = argv[i + 1] && !argv[i + 1].startsWith('-') && /\.cast$/.test(argv[i + 1]) ? argv[++i] : true;
-    } else if (a === '--json') args.flags.json = true;
+      // a following path is the cast file, unless it is the scene (no scene yet, or a .yaml file)
+      const n = argv[i + 1];
+      args.flags.cast = n && !n.startsWith('-') && args._.length > 0 && !/\.ya?ml$/i.test(n) ? argv[++i] : true;
+    } else if (a.startsWith('--cast=')) args.flags.cast = a.slice(7);
+    else if (a === '--json') args.flags.json = true;
     else if (a === '--install') args.flags.install = true;
     else if (a === '-h' || a === '--help') args.flags.help = true;
     else if (a.startsWith('-')) throw new UsageError(`unknown option ${a}\n\n${USAGE}`);
