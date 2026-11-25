@@ -74,3 +74,13 @@ test('the shipped examples render', () => {
     assert.ok(out.startsWith('<svg') && !out.includes('translateX'), f);
   }
 });
+
+test('progress bar is clipped to the window shape (same rx/ry as the background)', () => {
+  const out = render(SIMPLE);
+  const rx = out.match(/<rect width="[\d.]+" height="[\d.]+" rx="([\d.]+)" ry="[\d.]+" class="a"\/>/)[1];
+  assert.match(out, new RegExp(`<clipPath id="cm-clip"><rect [^>]*rx="${rx}" ry="${rx}"/></clipPath><g clip-path="url\\(#cm-clip\\)">`));
+  // svg-term draws the same rounded background rect for window: none, so the clip must follow it too.
+  const bare = render(SIMPLE.replace('final_hold: 2s', 'final_hold: 2s, window: none'));
+  const bareRx = bare.match(/<rect width="[\d.]+" height="[\d.]+" rx="([\d.]+)" ry="[\d.]+" class="a"\/>/)[1];
+  assert.match(bare, new RegExp(`<clipPath id="cm-clip"><rect [^>]*rx="${bareRx}"`));
+});
