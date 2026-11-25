@@ -22,6 +22,12 @@ scenes:
         hold: 4s
 ```
 
+**Default:** one scene, steps in order, every option from `assets/defaults.yaml`. **Alternatives:** several `scenes:` with titles and transitions; per-scene `style:`.
+
+**Example:**
+
+![multi-scene demo](../examples/multi-scene.svg)
+
 ## Steps
 
 Each step has exactly one action; the other keys are options.
@@ -47,6 +53,10 @@ Options on every step: `speed` (multiplier for this step), `hold` (pause after t
 A scene takes `title` (banner), `steps`, `transition`, `hold` (dwell at the end of the scene; default `scene_hold`, 2s for a title-only scene), and its own `style:` with scene-scoped options only (prompt, cursor, text styles, timing, spinner, banner, transition). Theme, font, window, size, playback and the progress bar are fixed for the whole render.
 
 Durations are `1.5s`, `800ms`, or a bare number of seconds.
+
+## When to use
+
+Start from a bare `steps:` list for one idea; move to `scenes:` when you need a banner, a chapter break or a different prompt/cursor part-way.
 
 ## Errors you will see
 

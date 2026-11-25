@@ -2,6 +2,10 @@
 
 **Default:** `hidden`. **Alternatives:** `block`, `bar`, `underline`; add `cursor_blink: true` to blink while idle.
 
+**Example:**
+
+![a blinking block cursor, then a bar](../examples/multi-scene.svg)
+
 ```yaml
 style:
   cursor: block

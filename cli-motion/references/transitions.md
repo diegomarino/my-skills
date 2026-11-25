@@ -2,6 +2,10 @@
 
 **Default:** `cut`. **Alternatives:** `clear`, `fade`.
 
+**Example:**
+
+![clear and fade transitions between scenes](../examples/multi-scene.svg)
+
 | `transition:` | What happens at the start of the next scene |
 |---|---|
 | `cut` | the screen is wiped instantly and the new scene starts |

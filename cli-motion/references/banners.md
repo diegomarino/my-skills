@@ -2,6 +2,12 @@
 
 **Default:** figlet `standard` font, drawn inside the terminal, coloured with `banner_style` (theme accent).
 
+**Alternatives:** figlet `standard` is the default; any other figlet font, or cfonts gradients (`block`, `simple3d`, `chrome` …) when `gradient:` is set.
+
+**Example:**
+
+![a gradient banner, framed demo](../examples/framed-demo.svg)
+
 ```yaml
 style:
   banner_font: standard      # any figlet font

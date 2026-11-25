@@ -2,6 +2,12 @@
 
 **Default:** `simple`, a bold green `❯`.
 
+**Alternatives:** `simple` (`❯`) is the default; `dollar`, `path`, `git`, `template`, `powerline`.
+
+**Example:**
+
+![powerline prompt (framed demo)](../examples/framed-demo.svg)
+
 | `prompt:` | Looks like | Notes |
 |---|---|---|
 | `simple` | `❯ ` | default |
